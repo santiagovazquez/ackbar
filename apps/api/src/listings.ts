@@ -92,10 +92,25 @@ listingsRouter.get("/cards/search", async (req, res) => {
   if (query.length < 1) return res.json([]);
   const result = await db.execute({
     sql: `SELECT id,name,subtitle,set_code,card_number
-          FROM cards
-          WHERE name LIKE ? OR subtitle LIKE ?
+          FROM (
+            SELECT id,name,subtitle,set_code,card_number,
+                   ROW_NUMBER() OVER (
+                     PARTITION BY name, COALESCE(subtitle, '')
+                     ORDER BY set_code, card_number
+                   ) AS variant_rank
+            FROM cards AS card
+            WHERE (name LIKE ? OR subtitle LIKE ?)
+              AND (
+                subtitle IS NOT NULL
+                OR NOT EXISTS (
+                  SELECT 1 FROM cards AS detailed
+                  WHERE detailed.name = card.name AND detailed.subtitle IS NOT NULL
+                )
+              )
+          )
+          WHERE variant_rank = 1
           ORDER BY CASE WHEN name LIKE ? THEN 0 ELSE 1 END, name, subtitle, set_code, card_number
-          LIMIT 25`,
+          LIMIT 3`,
     args: [`%${query}%`, `%${query}%`, `${query}%`],
   });
   res.json(result.rows);

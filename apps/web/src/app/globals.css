@@ -134,11 +134,66 @@ select {
   padding: 11px;
   border-radius: 8px;
 }
+.card-autocomplete {
+  position: relative;
+}
+.card-autocomplete input {
+  width: 100%;
+}
+.selected-card-details {
+  display: flex;
+  gap: 5px;
+  margin-top: 5px;
+  color: var(--muted);
+  font-weight: 400;
+}
+.selected-card-details span + span::before {
+  content: "·";
+  margin-right: 5px;
+}
+.autocomplete-results {
+  position: absolute;
+  z-index: 10;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  margin: 0;
+  padding: 4px;
+  list-style: none;
+  border: 1px solid #d0d5dd;
+  border-radius: 8px;
+  background: #fff;
+  box-shadow: 0 8px 24px #18202d20;
+}
+.autocomplete-results li {
+  display: grid;
+  gap: 2px;
+  padding: 9px 10px;
+  border-radius: 5px;
+  cursor: pointer;
+}
+.autocomplete-results li.active {
+  background: #f4f1e8;
+}
+.autocomplete-results small {
+  color: var(--muted);
+  font-weight: 400;
+}
+.autocomplete-results mark {
+  padding: 0;
+  background: #f9df92;
+  color: inherit;
+  font-weight: 800;
+}
 .item-row {
   display: grid;
-  grid-template-columns: 2fr 0.7fr 1fr 1fr auto;
+  grid-template-columns: minmax(260px, 1fr) 80px 120px 120px auto;
   gap: 9px;
   align-items: end;
+}
+.item-row label,
+.item-row input {
+  min-width: 0;
 }
 .error {
   color: #b42318;
