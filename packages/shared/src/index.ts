@@ -17,7 +17,7 @@ export interface CreateListingInput {
   listingType: ListingType;
   currency: Currency;
   title: string;
-  imageUrl?: string;
+  imageUrls?: string[];
   items: CardInput[];
   bulkPriceCents?: number;
 }
@@ -45,6 +45,7 @@ export interface Listing {
   currency: Currency;
   title: string;
   imageUrl: string | null;
+  imageUrls: string[];
   status: ListingStatus;
   createdAt: string;
   expiresAt: string;

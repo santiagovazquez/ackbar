@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import type { CardInput, Currency, ListingKind, ListingType } from "@swu/shared";
 import { createListing } from "../lib/api";
 import { useAuth } from "./auth-provider";
@@ -19,11 +19,13 @@ export function ListingForm({ kind }: { kind: ListingKind }) {
   const [currency, setCurrency] = useState<Currency>("ARS");
   const [title, setTitle] = useState("");
   const [bulkPriceCents, setBulkPriceCents] = useState<number | null>(null);
-  const [imageUrl, setImageUrl] = useState("");
+  const [imageUrls, setImageUrls] = useState<string[]>([]);
   const [items, setItems] = useState<CardInput[]>([emptyItem()]);
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [dragging, setDragging] = useState(false);
+  const fileInput = useRef<HTMLInputElement>(null);
   const update = (index: number, patch: Partial<CardInput>) =>
     setItems(items.map((item, i) => (i === index ? { ...item, ...patch } : item)));
   async function submit(event: React.FormEvent) {
@@ -32,7 +34,7 @@ export function ListingForm({ kind }: { kind: ListingKind }) {
       setError("Iniciá sesión con Google para publicar.");
       return;
     }
-    if ((kind === "sale" || listingType === "bulk") && !imageUrl) {
+    if ((kind === "sale" || listingType === "bulk") && imageUrls.length === 0) {
       setError("Agregá una foto de las cartas para publicar la venta.");
       return;
     }
@@ -45,7 +47,7 @@ export function ListingForm({ kind }: { kind: ListingKind }) {
           listingType,
           currency,
           title: listingType === "bulk" ? "Bulk" : title,
-          imageUrl: imageUrl || undefined,
+          imageUrls: imageUrls.length ? imageUrls : undefined,
           items: listingType === "singles" ? items : [],
           ...(bulkPriceCents == null ? {} : { bulkPriceCents }),
         },
@@ -57,20 +59,35 @@ export function ListingForm({ kind }: { kind: ListingKind }) {
       setBusy(false);
     }
   }
-  async function uploadImage(file: File) {
+  async function uploadImages(files: File[]) {
     if (!token) {
       setError("Iniciá sesión para subir una foto.");
+      return;
+    }
+    const availableSlots = 12 - imageUrls.length;
+    const selectedFiles = files.slice(0, availableSlots);
+    if (!selectedFiles.length) {
+      setError("Podés subir hasta 12 imágenes por publicación.");
+      return;
+    }
+    const acceptedTypes = new Set(["image/jpeg", "image/png", "image/webp"]);
+    if (selectedFiles.some((file) => !acceptedTypes.has(file.type))) {
+      setError("Las imágenes deben ser JPG, PNG o WebP.");
       return;
     }
     setUploading(true);
     setError("");
     try {
-      const blob = await upload(`listing-images/${file.name}`, file, {
-        access: "public",
-        handleUploadUrl: "/api/upload",
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      setImageUrl(blob.url);
+      const blobs = await Promise.all(
+        selectedFiles.map((file) =>
+          upload(`listing-images/${file.name}`, file, {
+            access: "public",
+            handleUploadUrl: "/api/upload",
+            headers: { Authorization: `Bearer ${token}` },
+          }),
+        ),
+      );
+      setImageUrls((current) => [...current, ...blobs.map((blob) => blob.url)].slice(0, 12));
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : "No se pudo subir la foto.");
     } finally {
@@ -125,31 +142,71 @@ export function ListingForm({ kind }: { kind: ListingKind }) {
           />
         </label>
       )}
-      <label>
-        Foto
+      <section className="image-upload-field" aria-labelledby="images-label">
+        <div className="field-heading">
+          <span id="images-label">Fotos</span>
+          <small>{imageUrls.length}/12</small>
+        </div>
+        <div
+          className={`image-dropzone${dragging ? " dragging" : ""}`}
+          onClick={() => fileInput.current?.click()}
+          onDragEnter={(event) => {
+            event.preventDefault();
+            setDragging(true);
+          }}
+          onDragOver={(event) => event.preventDefault()}
+          onDragLeave={(event) => {
+            if (!event.currentTarget.contains(event.relatedTarget as Node)) setDragging(false);
+          }}
+          onDrop={(event) => {
+            event.preventDefault();
+            setDragging(false);
+            void uploadImages(Array.from(event.dataTransfer.files));
+          }}
+          role="button"
+          tabIndex={0}
+          onKeyDown={(event) => {
+            if (event.key === "Enter" || event.key === " ") fileInput.current?.click();
+          }}
+        >
+          <svg aria-hidden="true" viewBox="0 0 24 24">
+            <path d="M12 16V4m0 0L7.5 8.5M12 4l4.5 4.5M5 14v4a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-4" />
+          </svg>
+          <strong>{dragging ? "Soltá las imágenes acá" : "Arrastrá tus imágenes acá"}</strong>
+          <span>o hacé clic para elegir varias</span>
+          <small>JPG, PNG o WebP · máximo 8 MB por imagen</small>
+        </div>
         <input
+          ref={fileInput}
+          className="visually-hidden"
           type="file"
+          multiple
           accept="image/jpeg,image/png,image/webp"
           onChange={(event) => {
-            const file = event.target.files?.[0];
-            if (file) void uploadImage(file);
+            const files = Array.from(event.target.files ?? []);
+            if (files.length) void uploadImages(files);
+            event.target.value = "";
           }}
         />
-        {uploading && <small>Subiendo foto…</small>}
-        {imageUrl && <small>Foto lista. También podés reemplazarla.</small>}
-      </label>
-      <details>
-        <summary>Usar una URL de imagen</summary>
-        <label>
-          URL
-          <input
-            type="url"
-            value={imageUrl}
-            onChange={(e) => setImageUrl(e.target.value)}
-            placeholder="https://..."
-          />
-        </label>
-      </details>
+        {uploading && <p className="upload-status">Subiendo imágenes…</p>}
+        {imageUrls.length > 0 && (
+          <div className="image-previews" aria-label="Imágenes subidas">
+            {imageUrls.map((url, index) => (
+              <div className="image-preview" key={url}>
+                <img src={url} alt={`Vista previa ${index + 1}`} />
+                {index === 0 && <span>Portada</span>}
+                <button
+                  type="button"
+                  aria-label={`Quitar imagen ${index + 1}`}
+                  onClick={() => setImageUrls((current) => current.filter((item) => item !== url))}
+                >
+                  ×
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+      </section>
       {listingType === "bulk" ? (
         <label>
           Precio

@@ -17,15 +17,15 @@ const createSchema = z
     listingType: z.enum(["singles", "bulk"]).default("singles"),
     currency: z.enum(["ARS", "USD"]).default("ARS"),
     title: z.string().min(1).max(120),
-    imageUrl: z.url().optional(),
+    imageUrls: z.array(z.url()).min(1).max(12).optional(),
     items: z.array(cardSchema),
     bulkPriceCents: z.number().int().nonnegative().optional(),
   })
   .superRefine((value, context) => {
-    if (value.kind === "sale" && !value.imageUrl)
+    if (value.kind === "sale" && !value.imageUrls?.length)
       context.addIssue({
         code: "custom",
-        path: ["imageUrl"],
+        path: ["imageUrls"],
         message: "Sale publications require a photo",
       });
     if (value.listingType === "singles" && value.items.length === 0)
@@ -36,8 +36,8 @@ const createSchema = z
         path: ["bulkPriceCents"],
         message: "Bulk requires a price",
       });
-    if (value.listingType === "bulk" && !value.imageUrl)
-      context.addIssue({ code: "custom", path: ["imageUrl"], message: "Bulk requires a photo" });
+    if (value.listingType === "bulk" && !value.imageUrls?.length)
+      context.addIssue({ code: "custom", path: ["imageUrls"], message: "Bulk requires a photo" });
     if (value.listingType === "singles")
       value.items.forEach((item, index) => {
         if (item.unitPriceCents == null && item.playsetPriceCents == null)
@@ -70,13 +70,20 @@ async function serializeListing(id: string) {
     sql: `SELECT i.*, i.quantity - COALESCE(SUM(CASE WHEN c.status != 'cancelled' THEN c.quantity ELSE 0 END),0) available_quantity FROM listing_items i LEFT JOIN claims c ON c.item_id=i.id WHERE i.listing_id=? GROUP BY i.id`,
     args: [id],
   });
+  const images = await db.execute({
+    sql: `SELECT url FROM listing_images WHERE listing_id=? ORDER BY position`,
+    args: [id],
+  });
+  const imageUrls = images.rows.map((image) => String(image.url));
+  if (!imageUrls.length && row.image_url) imageUrls.push(String(row.image_url));
   return {
     id: row.id,
     kind: row.kind,
     listingType: row.listing_type,
     currency: row.currency,
     title: row.title,
-    imageUrl: row.image_url,
+    imageUrl: imageUrls[0] ?? null,
+    imageUrls,
     status: row.status,
     createdAt: row.created_at,
     expiresAt: row.expires_at,
@@ -168,11 +175,15 @@ listingsRouter.post("/", requireAuth, async (req, res) => {
         parsed.data.listingType,
         parsed.data.currency,
         parsed.data.title,
-        parsed.data.imageUrl ?? null,
+        parsed.data.imageUrls?.[0] ?? null,
         now.toISOString(),
         expires.toISOString(),
       ],
     },
+    ...(parsed.data.imageUrls ?? []).map((url, position) => ({
+      sql: `INSERT INTO listing_images (id, listing_id, url, position) VALUES (?, ?, ?, ?)`,
+      args: [crypto.randomUUID(), id, url, position],
+    })),
     ...storedItems.flatMap((item) => [
       {
         sql: `INSERT INTO cards (id, name) VALUES (?, ?) ON CONFLICT(id) DO UPDATE SET name=excluded.name`,

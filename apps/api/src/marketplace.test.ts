@@ -39,7 +39,7 @@ async function createPublication(kind: "sale" | "wanted", ownerToken: string) {
     .send({
       kind,
       title: kind === "sale" ? "Cards for sale" : "Cards wanted",
-      ...(kind === "sale" ? { imageUrl: "https://example.com/cards.jpg" } : {}),
+      ...(kind === "sale" ? { imageUrls: ["https://example.com/cards.jpg"] } : {}),
       items: [
         {
           cardId: "luke-skywalker",
@@ -56,19 +56,27 @@ async function createPublication(kind: "sale" | "wanted", ownerToken: string) {
 
 describe("marketplace lifecycle", () => {
   it("creates a USD bulk publication with only a photo and price", async () => {
-    const response = await request.post("/listings").set(authenticated("seller-token")).send({
-      kind: "sale",
-      listingType: "bulk",
-      currency: "USD",
-      title: "Bulk",
-      imageUrl: "https://example.com/bulk.jpg",
-      bulkPriceCents: 12550,
-      items: [],
-    });
+    const response = await request
+      .post("/listings")
+      .set(authenticated("seller-token"))
+      .send({
+        kind: "sale",
+        listingType: "bulk",
+        currency: "USD",
+        title: "Bulk",
+        imageUrls: ["https://example.com/bulk.jpg", "https://example.com/bulk-detail.jpg"],
+        bulkPriceCents: 12550,
+        items: [],
+      });
 
     expect(response.status, JSON.stringify(response.body)).toBe(201);
     expect(response.body.listingType).toBe("bulk");
     expect(response.body.currency).toBe("USD");
+    expect(response.body.imageUrls).toEqual([
+      "https://example.com/bulk.jpg",
+      "https://example.com/bulk-detail.jpg",
+    ]);
+    expect(response.body.imageUrl).toBe("https://example.com/bulk.jpg");
     expect(response.body.items).toHaveLength(1);
     expect(response.body.items[0].unitPriceCents).toBe(12550);
   });

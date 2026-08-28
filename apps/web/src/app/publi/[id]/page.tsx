@@ -30,7 +30,7 @@ export async function generateMetadata({
       openGraph: {
         title: listing.title,
         description: lines,
-        images: listing.imageUrl ? [{ url: listing.imageUrl }] : [],
+        images: listing.imageUrls.map((url) => ({ url })),
       },
     };
   } catch {
@@ -43,7 +43,13 @@ export default async function PublicationPage({ params }: { params: Promise<{ id
   return (
     <main>
       <article className="publication">
-        {listing.imageUrl && <img src={listing.imageUrl} alt="Cartas de la publicación" />}
+        {listing.imageUrls.length > 0 && (
+          <div className="publication-gallery">
+            {listing.imageUrls.map((url, index) => (
+              <img key={url} src={url} alt={`Cartas de la publicación ${index + 1}`} />
+            ))}
+          </div>
+        )}
         <p className="muted">
           {listing.kind === "sale" ? "VENTA" : "BÚSQUEDA"} · {listing.listingType.toUpperCase()} ·{" "}
           {listing.currency} · {listing.status.toUpperCase()}
