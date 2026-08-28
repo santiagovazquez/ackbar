@@ -195,6 +195,17 @@ select {
 .item-row input {
   min-width: 0;
 }
+@media (min-width: 721px) {
+  .item-row {
+    padding-bottom: 21px;
+  }
+  .selected-card-details {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+  }
+}
 .error {
   color: #b42318;
 }
