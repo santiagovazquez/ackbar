@@ -18,4 +18,18 @@ export async function migrate() {
     statements.map((sql) => ({ sql })),
     "write",
   );
+  const listingColumns = await db.execute("PRAGMA table_info(listings)");
+  const columnNames = new Set(listingColumns.rows.map((column) => String(column.name)));
+  const additions = [
+    !columnNames.has("listing_type") &&
+      `ALTER TABLE listings ADD COLUMN listing_type TEXT NOT NULL DEFAULT 'singles' CHECK(listing_type IN ('singles','bulk'))`,
+    !columnNames.has("currency") &&
+      `ALTER TABLE listings ADD COLUMN currency TEXT NOT NULL DEFAULT 'ARS' CHECK(currency IN ('ARS','USD'))`,
+  ].filter((sql): sql is string => Boolean(sql));
+  if (additions.length) {
+    await db.batch(
+      additions.map((sql) => ({ sql })),
+      "write",
+    );
+  }
 }

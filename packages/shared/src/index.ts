@@ -1,4 +1,6 @@
 export type ListingKind = "sale" | "wanted";
+export type ListingType = "singles" | "bulk";
+export type Currency = "ARS" | "USD";
 export type ListingStatus = "active" | "closed" | "expired" | "deleted";
 export type RatingValue = "positive" | "neutral" | "negative";
 
@@ -12,9 +14,12 @@ export interface CardInput {
 
 export interface CreateListingInput {
   kind: ListingKind;
+  listingType: ListingType;
+  currency: Currency;
   title: string;
   imageUrl?: string;
   items: CardInput[];
+  bulkPriceCents?: number;
 }
 
 export interface UserSummary {
@@ -36,6 +41,8 @@ export interface ListingItem {
 export interface Listing {
   id: string;
   kind: ListingKind;
+  listingType: ListingType;
+  currency: Currency;
   title: string;
   imageUrl: string | null;
   status: ListingStatus;

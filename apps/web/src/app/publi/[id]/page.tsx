@@ -1,13 +1,13 @@
 import type { Metadata } from "next";
 import { getListing } from "../../../lib/api";
 import { ClaimControl } from "../../../components/claim-control";
-const money = (cents: number | null) =>
+import type { Currency } from "@swu/shared";
+const money = (cents: number | null, currency: Currency) =>
   cents == null
     ? "—"
     : new Intl.NumberFormat("es-AR", {
         style: "currency",
-        currency: "ARS",
-        maximumFractionDigits: 0,
+        currency,
       }).format(cents / 100);
 export async function generateMetadata({
   params,
@@ -19,7 +19,10 @@ export async function generateMetadata({
     const listing = await getListing(id);
     const lines = listing.items
       .slice(0, 4)
-      .map((item) => `${item.quantity}× ${item.name} · ${money(item.unitPriceCents)}`)
+      .map(
+        (item) =>
+          `${item.quantity}× ${item.name} · ${money(item.unitPriceCents, listing.currency)}`,
+      )
       .join(" | ");
     return {
       title: `${listing.title} · SWU Mercado`,
@@ -42,26 +45,37 @@ export default async function PublicationPage({ params }: { params: Promise<{ id
       <article className="publication">
         {listing.imageUrl && <img src={listing.imageUrl} alt="Cartas de la publicación" />}
         <p className="muted">
-          {listing.kind === "sale" ? "VENTA" : "BÚSQUEDA"} · {listing.status.toUpperCase()}
+          {listing.kind === "sale" ? "VENTA" : "BÚSQUEDA"} · {listing.listingType.toUpperCase()} ·{" "}
+          {listing.currency} · {listing.status.toUpperCase()}
         </p>
         <h1>{listing.title}</h1>
         <p>
           Publicado por <a href={`/perfil/${listing.seller.id}`}>{listing.seller.name}</a>
         </p>
-        {listing.items.map((item) => (
-          <section key={item.id} className={item.availableQuantity === 0 ? "locked" : ""}>
-            <h2>
-              {item.availableQuantity === 0 ? "🔒 " : ""}
-              {item.name}
-            </h2>
-            <p>
-              {item.availableQuantity} de {item.quantity} disponibles · unidad{" "}
-              {money(item.unitPriceCents)}
-              {item.playsetPriceCents != null && ` · playset ${money(item.playsetPriceCents)}`}
-            </p>
-            {listing.status === "active" && <ClaimControl item={item} />}
+        {listing.listingType === "bulk" ? (
+          <section>
+            <h2>{money(listing.items[0]?.unitPriceCents ?? null, listing.currency)}</h2>
+            {listing.status === "active" && listing.items[0] && (
+              <ClaimControl item={listing.items[0]} />
+            )}
           </section>
-        ))}
+        ) : (
+          listing.items.map((item) => (
+            <section key={item.id} className={item.availableQuantity === 0 ? "locked" : ""}>
+              <h2>
+                {item.availableQuantity === 0 ? "🔒 " : ""}
+                {item.name}
+              </h2>
+              <p>
+                {item.availableQuantity} de {item.quantity} disponibles · unidad{" "}
+                {money(item.unitPriceCents, listing.currency)}
+                {item.playsetPriceCents != null &&
+                  ` · playset ${money(item.playsetPriceCents, listing.currency)}`}
+              </p>
+              {listing.status === "active" && <ClaimControl item={item} />}
+            </section>
+          ))
+        )}
       </article>
     </main>
   );

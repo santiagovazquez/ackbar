@@ -14,9 +14,12 @@ const cardSchema = z.object({
 const createSchema = z
   .object({
     kind: z.enum(["sale", "wanted"]),
+    listingType: z.enum(["singles", "bulk"]).default("singles"),
+    currency: z.enum(["ARS", "USD"]).default("ARS"),
     title: z.string().min(1).max(120),
     imageUrl: z.url().optional(),
-    items: z.array(cardSchema).min(1),
+    items: z.array(cardSchema),
+    bulkPriceCents: z.number().int().nonnegative().optional(),
   })
   .superRefine((value, context) => {
     if (value.kind === "sale" && !value.imageUrl)
@@ -25,20 +28,31 @@ const createSchema = z
         path: ["imageUrl"],
         message: "Sale publications require a photo",
       });
-    value.items.forEach((item, index) => {
-      if (item.unitPriceCents == null && item.playsetPriceCents == null)
-        context.addIssue({
-          code: "custom",
-          path: ["items", index],
-          message: "At least one price is required",
-        });
-      if (item.playsetPriceCents != null && item.quantity < 3)
-        context.addIssue({
-          code: "custom",
-          path: ["items", index, "playsetPriceCents"],
-          message: "Playset pricing requires at least three units",
-        });
-    });
+    if (value.listingType === "singles" && value.items.length === 0)
+      context.addIssue({ code: "custom", path: ["items"], message: "Singles require cards" });
+    if (value.listingType === "bulk" && value.bulkPriceCents == null)
+      context.addIssue({
+        code: "custom",
+        path: ["bulkPriceCents"],
+        message: "Bulk requires a price",
+      });
+    if (value.listingType === "bulk" && !value.imageUrl)
+      context.addIssue({ code: "custom", path: ["imageUrl"], message: "Bulk requires a photo" });
+    if (value.listingType === "singles")
+      value.items.forEach((item, index) => {
+        if (item.unitPriceCents == null && item.playsetPriceCents == null)
+          context.addIssue({
+            code: "custom",
+            path: ["items", index],
+            message: "At least one price is required",
+          });
+        if (item.playsetPriceCents != null && item.quantity < 3)
+          context.addIssue({
+            code: "custom",
+            path: ["items", index, "playsetPriceCents"],
+            message: "Playset pricing requires at least three units",
+          });
+      });
   });
 
 async function serializeListing(id: string) {
@@ -59,6 +73,8 @@ async function serializeListing(id: string) {
   return {
     id: row.id,
     kind: row.kind,
+    listingType: row.listing_type,
+    currency: row.currency,
     title: row.title,
     imageUrl: row.image_url,
     status: row.status,
@@ -130,20 +146,34 @@ listingsRouter.post("/", requireAuth, async (req, res) => {
   const id = crypto.randomUUID();
   const now = new Date();
   const expires = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+  const storedItems =
+    parsed.data.listingType === "bulk"
+      ? [
+          {
+            cardId: `bulk-${id}`,
+            name: "Bulk",
+            quantity: 1,
+            unitPriceCents: parsed.data.bulkPriceCents!,
+            playsetPriceCents: null,
+          },
+        ]
+      : parsed.data.items;
   const statements = [
     {
-      sql: `INSERT INTO listings (id, owner_id, kind, title, image_url, created_at, expires_at) VALUES (?, ?, ?, ?, ?, ?, ?)`,
+      sql: `INSERT INTO listings (id, owner_id, kind, listing_type, currency, title, image_url, created_at, expires_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       args: [
         id,
         req.user!.id,
         parsed.data.kind,
+        parsed.data.listingType,
+        parsed.data.currency,
         parsed.data.title,
         parsed.data.imageUrl ?? null,
         now.toISOString(),
         expires.toISOString(),
       ],
     },
-    ...parsed.data.items.flatMap((item) => [
+    ...storedItems.flatMap((item) => [
       {
         sql: `INSERT INTO cards (id, name) VALUES (?, ?) ON CONFLICT(id) DO UPDATE SET name=excluded.name`,
         args: [item.cardId, item.name],

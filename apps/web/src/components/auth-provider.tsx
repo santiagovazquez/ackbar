@@ -22,7 +22,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       <AuthContext.Provider value={{ token, signOut }}>
         <header className="topbar">
           <a className="brand" href="/">
-            SWU Mercado
+            SWU compraventa
           </a>
           <nav>
             <a href="/vendo">Vendo</a>
