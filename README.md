@@ -13,8 +13,8 @@ Google sign-in is initiated entirely in the browser. Protected API routes indepe
 ## Local setup
 
 1. Install dependencies with `pnpm install`.
-2. Copy `.env.example` to `.env` and configure a Google OAuth Web client and S3 bucket credentials.
-3. Also expose the relevant variables to each app (for example through `apps/api/.env` and `apps/web/.env.local`).
+2. Copy `apps/api/.env.example` to `apps/api/.env` and configure the API variables.
+3. Copy `apps/web/.env.example` to `apps/web/.env.local` and configure the Google and S3 variables. Next.js does not load the repository-root `.env` because the web app runs from `apps/web`.
 4. Run `pnpm db:migrate`.
 5. Run `pnpm db:seed` to download and import the current SWU card catalog.
 6. Run `pnpm dev`.

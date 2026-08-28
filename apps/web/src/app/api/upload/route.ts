@@ -14,12 +14,21 @@ function requiredEnvironmentVariable(name: string) {
 }
 
 export async function POST(request: Request) {
-  try {
-    const token = request.headers.get("authorization")?.replace(/^Bearer /, "");
-    const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
-    if (!token || !clientId) throw new Error("Authentication required");
-    await google.verifyIdToken({ idToken: token, audience: clientId });
+  const token = request.headers.get("authorization")?.replace(/^Bearer /, "");
+  const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
+  if (!token || !clientId)
+    return NextResponse.json({ error: "Authentication required" }, { status: 401 });
 
+  try {
+    await google.verifyIdToken({ idToken: token, audience: clientId });
+  } catch {
+    return NextResponse.json(
+      { error: "Your session expired. Sign in again to upload images." },
+      { status: 401 },
+    );
+  }
+
+  try {
     const body = (await request.json()) as { contentType?: string; size?: number };
     if (!body.contentType || !allowedContentTypes.has(body.contentType))
       throw new Error("Images must be JPG, PNG, or WebP");
