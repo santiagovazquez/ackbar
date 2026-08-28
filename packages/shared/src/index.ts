@@ -16,7 +16,7 @@ export interface CreateListingInput {
   kind: ListingKind;
   listingType: ListingType;
   currency: Currency;
-  title: string;
+  description?: string;
   imageUrls?: string[];
   items: CardInput[];
   bulkPriceCents?: number;
@@ -43,7 +43,7 @@ export interface Listing {
   kind: ListingKind;
   listingType: ListingType;
   currency: Currency;
-  title: string;
+  description: string | null;
   imageUrl: string | null;
   imageUrls: string[];
   status: ListingStatus;

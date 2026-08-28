@@ -25,12 +25,13 @@ export async function generateMetadata({
           `${item.quantity}× ${item.name} · ${money(item.unitPriceCents, listing.currency)}`,
       )
       .join(" | ");
+    const name = listing.listingType === "bulk" ? "Bulk" : listing.items[0]?.name;
     return {
-      title: `${listing.title} · SWU Mercado`,
-      description: lines,
+      title: `${name ?? "Publicación"} · SWU Mercado`,
+      description: listing.description ?? lines,
       openGraph: {
-        title: listing.title,
-        description: lines,
+        title: name ?? "Publicación en SWU Mercado",
+        description: listing.description ?? lines,
         images: listing.imageUrls.map((url) => ({ url })),
       },
     };
@@ -49,7 +50,7 @@ export default async function PublicationPage({ params }: { params: Promise<{ id
           {listing.kind === "sale" ? "VENTA" : "BÚSQUEDA"} · {listing.listingType.toUpperCase()} ·{" "}
           {listing.currency} · {listing.status.toUpperCase()}
         </p>
-        <h1>{listing.title}</h1>
+        {listing.description && <p className="listing-detail-description">{listing.description}</p>}
         <p>
           Publicado por <a href={`/perfil/${listing.seller.id}`}>{listing.seller.name}</a>
         </p>

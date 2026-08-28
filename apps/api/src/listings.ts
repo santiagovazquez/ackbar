@@ -16,7 +16,7 @@ const createSchema = z
     kind: z.enum(["sale", "wanted"]),
     listingType: z.enum(["singles", "bulk"]).default("singles"),
     currency: z.enum(["ARS", "USD"]).default("ARS"),
-    title: z.string().min(1).max(120),
+    description: z.string().trim().max(500).optional(),
     imageUrls: z.array(z.url()).min(1).max(24).optional(),
     items: z.array(cardSchema),
     bulkPriceCents: z.number().int().nonnegative().optional(),
@@ -81,7 +81,7 @@ async function serializeListing(id: string) {
     kind: row.kind,
     listingType: row.listing_type,
     currency: row.currency,
-    title: row.title,
+    description: row.description ? String(row.description) : null,
     imageUrl: imageUrls[0] ?? null,
     imageUrls,
     status: row.status,
@@ -101,10 +101,12 @@ async function serializeListing(id: string) {
 }
 
 listingsRouter.get("/", async (req, res) => {
-  const kind = req.query.kind === "wanted" ? "wanted" : "sale";
+  const kind = req.query.kind === "sale" || req.query.kind === "wanted" ? req.query.kind : null;
   const result = await db.execute({
-    sql: `SELECT id FROM listings WHERE kind=? AND status='active' AND expires_at > ? ORDER BY created_at DESC LIMIT 50`,
-    args: [kind, new Date().toISOString()],
+    sql: `SELECT id FROM listings
+          WHERE (? IS NULL OR kind=?) AND status='active' AND expires_at > ?
+          ORDER BY created_at DESC, id DESC LIMIT 50`,
+    args: [kind, kind, new Date().toISOString()],
   });
   res.json(
     (await Promise.all(result.rows.map((row) => serializeListing(String(row.id))))).filter(Boolean),
@@ -167,14 +169,15 @@ listingsRouter.post("/", requireAuth, async (req, res) => {
       : parsed.data.items;
   const statements = [
     {
-      sql: `INSERT INTO listings (id, owner_id, kind, listing_type, currency, title, image_url, created_at, expires_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      sql: `INSERT INTO listings (id, owner_id, kind, listing_type, currency, title, description, image_url, created_at, expires_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       args: [
         id,
         req.user!.id,
         parsed.data.kind,
         parsed.data.listingType,
         parsed.data.currency,
-        parsed.data.title,
+        "",
+        parsed.data.description || null,
         parsed.data.imageUrls?.[0] ?? null,
         now.toISOString(),
         expires.toISOString(),

@@ -10,15 +10,15 @@ usersRouter.get("/me/dashboard", requireAuth, async (req, res) => {
     args: [req.user!.id, new Date().toISOString()],
   });
   const listings = await db.execute({
-    sql: `SELECT l.id,l.kind,l.title,l.status,l.created_at,l.expires_at,COUNT(DISTINCT c.id) claim_count,COALESCE(SUM(CASE WHEN c.status!='cancelled' THEN c.amount_cents ELSE 0 END),0) total_cents FROM listings l LEFT JOIN listing_items i ON i.listing_id=l.id LEFT JOIN claims c ON c.item_id=i.id WHERE l.owner_id=? AND l.status!='deleted' GROUP BY l.id ORDER BY l.created_at DESC`,
+    sql: `SELECT l.id,l.kind,l.description,l.status,l.created_at,l.expires_at,GROUP_CONCAT(DISTINCT i.card_name) card_names,COUNT(DISTINCT c.id) claim_count,COALESCE(SUM(CASE WHEN c.status!='cancelled' THEN c.amount_cents ELSE 0 END),0) total_cents FROM listings l LEFT JOIN listing_items i ON i.listing_id=l.id LEFT JOIN claims c ON c.item_id=i.id WHERE l.owner_id=? AND l.status!='deleted' GROUP BY l.id ORDER BY l.created_at DESC`,
     args: [req.user!.id],
   });
   const purchases = await db.execute({
-    sql: `SELECT c.id,c.quantity,c.amount_cents,c.status,c.created_at,i.card_name,l.id listing_id,l.title,u.id counterparty_id,u.name counterparty_name,EXISTS(SELECT 1 FROM ratings r WHERE r.claim_id=c.id AND r.from_user_id=?) rated FROM claims c JOIN listing_items i ON i.id=c.item_id JOIN listings l ON l.id=i.listing_id JOIN users u ON u.id=CASE WHEN l.kind='sale' THEN l.owner_id ELSE c.user_id END WHERE ((l.kind='sale' AND c.user_id=?) OR (l.kind='wanted' AND l.owner_id=?)) AND c.status!='cancelled' ORDER BY c.created_at DESC`,
+    sql: `SELECT c.id,c.quantity,c.amount_cents,c.status,c.created_at,i.card_name,l.id listing_id,l.description,u.id counterparty_id,u.name counterparty_name,EXISTS(SELECT 1 FROM ratings r WHERE r.claim_id=c.id AND r.from_user_id=?) rated FROM claims c JOIN listing_items i ON i.id=c.item_id JOIN listings l ON l.id=i.listing_id JOIN users u ON u.id=CASE WHEN l.kind='sale' THEN l.owner_id ELSE c.user_id END WHERE ((l.kind='sale' AND c.user_id=?) OR (l.kind='wanted' AND l.owner_id=?)) AND c.status!='cancelled' ORDER BY c.created_at DESC`,
     args: [req.user!.id, req.user!.id, req.user!.id],
   });
   const sales = await db.execute({
-    sql: `SELECT c.id,c.quantity,c.amount_cents,c.status,c.created_at,i.card_name,l.id listing_id,l.title,u.id counterparty_id,u.name counterparty_name,EXISTS(SELECT 1 FROM ratings r WHERE r.claim_id=c.id AND r.from_user_id=?) rated FROM claims c JOIN listing_items i ON i.id=c.item_id JOIN listings l ON l.id=i.listing_id JOIN users u ON u.id=CASE WHEN l.kind='sale' THEN c.user_id ELSE l.owner_id END WHERE ((l.kind='sale' AND l.owner_id=?) OR (l.kind='wanted' AND c.user_id=?)) AND c.status!='cancelled' ORDER BY c.created_at DESC`,
+    sql: `SELECT c.id,c.quantity,c.amount_cents,c.status,c.created_at,i.card_name,l.id listing_id,l.description,u.id counterparty_id,u.name counterparty_name,EXISTS(SELECT 1 FROM ratings r WHERE r.claim_id=c.id AND r.from_user_id=?) rated FROM claims c JOIN listing_items i ON i.id=c.item_id JOIN listings l ON l.id=i.listing_id JOIN users u ON u.id=CASE WHEN l.kind='sale' THEN c.user_id ELSE l.owner_id END WHERE ((l.kind='sale' AND l.owner_id=?) OR (l.kind='wanted' AND c.user_id=?)) AND c.status!='cancelled' ORDER BY c.created_at DESC`,
     args: [req.user!.id, req.user!.id, req.user!.id],
   });
   const ratings = await db.execute({
@@ -44,7 +44,7 @@ usersRouter.get("/:id", async (req, res) => {
     args: [req.params.id, req.params.id, req.params.id, req.params.id, req.params.id],
   });
   const listings = await db.execute({
-    sql: `SELECT id,kind,title,image_url,created_at,expires_at FROM listings WHERE owner_id=? AND status='active' AND expires_at>? ORDER BY created_at DESC`,
+    sql: `SELECT id,kind,description,image_url,created_at,expires_at FROM listings WHERE owner_id=? AND status='active' AND expires_at>? ORDER BY created_at DESC`,
     args: [req.params.id, new Date().toISOString()],
   });
   res.json({ ...user.rows[0], ...stats.rows[0], listings: listings.rows });

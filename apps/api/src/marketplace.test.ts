@@ -38,7 +38,7 @@ async function createPublication(kind: "sale" | "wanted", ownerToken: string) {
     .set(authenticated(ownerToken))
     .send({
       kind,
-      title: kind === "sale" ? "Cards for sale" : "Cards wanted",
+      description: kind === "sale" ? "Cards for sale" : "Cards wanted",
       ...(kind === "sale" ? { imageUrls: ["https://example.com/cards.jpg"] } : {}),
       items: [
         {
@@ -63,7 +63,7 @@ describe("marketplace lifecycle", () => {
         kind: "sale",
         listingType: "bulk",
         currency: "USD",
-        title: "Bulk",
+        description: "Complete collection bulk",
         imageUrls: ["https://example.com/bulk.jpg", "https://example.com/bulk-detail.jpg"],
         bulkPriceCents: 12550,
         items: [],

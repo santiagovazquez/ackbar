@@ -10,7 +10,7 @@ interface Exchange {
   status: string;
   card_name: string;
   listing_id: string;
-  title: string;
+  description: string | null;
   counterparty_id: string;
   counterparty_name: string;
   rated: number;
@@ -31,7 +31,8 @@ interface DashboardData {
   listings: Array<{
     id: string;
     kind: string;
-    title: string;
+    description: string | null;
+    card_names: string | null;
     status: string;
     claim_count: number;
     total_cents: number;
@@ -125,8 +126,8 @@ export default function Dashboard() {
               {row.quantity}× {row.card_name}
             </h3>
             <p>
-              <a href={`/publi/${row.listing_id}`}>{row.title}</a> · {money(row.amount_cents)} · con{" "}
-              <a href={`/perfil/${row.counterparty_id}`}>{row.counterparty_name}</a>
+              <a href={`/publi/${row.listing_id}`}>{row.card_name}</a> · {money(row.amount_cents)} ·
+              con <a href={`/perfil/${row.counterparty_id}`}>{row.counterparty_name}</a>
             </p>
             <div className="actions">
               {role === "seller" && row.status === "claimed" && (
@@ -191,8 +192,9 @@ export default function Dashboard() {
             <article className="panel" key={listing.id}>
               <span className="status">{listing.status}</span>
               <h3>
-                <a href={`/publi/${listing.id}`}>{listing.title}</a>
+                <a href={`/publi/${listing.id}`}>{listing.card_names ?? "Bulk"}</a>
               </h3>
+              {listing.description && <p>{listing.description}</p>}
               <p>
                 {listing.claim_count} claims · {money(listing.total_cents)}
               </p>

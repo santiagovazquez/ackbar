@@ -38,11 +38,16 @@ export default async function Profile({ params }: { params: Promise<{ id: string
       <div className="grid">
         {user.listings?.length ? (
           user.listings.map(
-            (listing: { id: string; kind: string; title: string; image_url: string | null }) => (
+            (listing: {
+              id: string;
+              kind: string;
+              description: string | null;
+              image_url: string | null;
+            }) => (
               <a className="panel" href={`/publi/${listing.id}`} key={listing.id}>
                 {listing.image_url && <img src={listing.image_url} alt="" />}
                 <small>{listing.kind === "sale" ? "VENTA" : "BÚSQUEDA"}</small>
-                <h3>{listing.title}</h3>
+                {listing.description && <p>{listing.description}</p>}
               </a>
             ),
           )

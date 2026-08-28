@@ -27,6 +27,7 @@ export async function migrate() {
       `ALTER TABLE listings ADD COLUMN listing_type TEXT NOT NULL DEFAULT 'singles' CHECK(listing_type IN ('singles','bulk'))`,
     !columnNames.has("currency") &&
       `ALTER TABLE listings ADD COLUMN currency TEXT NOT NULL DEFAULT 'ARS' CHECK(currency IN ('ARS','USD'))`,
+    !columnNames.has("description") && `ALTER TABLE listings ADD COLUMN description TEXT`,
   ].filter((sql): sql is string => Boolean(sql));
   if (additions.length) {
     await db.batch(
@@ -34,4 +35,7 @@ export async function migrate() {
       "write",
     );
   }
+  await db.execute(
+    `UPDATE listings SET description=title WHERE description IS NULL AND title IS NOT NULL AND title!=''`,
+  );
 }

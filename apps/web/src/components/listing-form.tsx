@@ -19,7 +19,7 @@ export function ListingForm({ kind }: { kind: ListingKind }) {
   const { token } = useAuth();
   const [listingType, setListingType] = useState<ListingType>("singles");
   const [currency, setCurrency] = useState<Currency>("ARS");
-  const [title, setTitle] = useState("");
+  const [description, setDescription] = useState("");
   const [bulkPriceCents, setBulkPriceCents] = useState<number | null>(null);
   const [imageUrls, setImageUrls] = useState<string[]>([]);
   const [items, setItems] = useState<CardInput[]>([emptyItem()]);
@@ -48,7 +48,7 @@ export function ListingForm({ kind }: { kind: ListingKind }) {
           kind,
           listingType,
           currency,
-          title: listingType === "bulk" ? "Bulk" : title,
+          ...(description.trim() ? { description: description.trim() } : {}),
           imageUrls: imageUrls.length ? imageUrls : undefined,
           items: listingType === "singles" ? items : [],
           ...(bulkPriceCents == null ? {} : { bulkPriceCents }),
@@ -150,18 +150,18 @@ export function ListingForm({ kind }: { kind: ListingKind }) {
           </div>
         </fieldset>
       </div>
-      {listingType === "singles" && (
-        <label>
-          Título
-          <input
-            required
-            maxLength={120}
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            placeholder={kind === "sale" ? "Singles disponibles" : "Cartas que estoy buscando"}
-          />
-        </label>
-      )}
+      <label>
+        <span>
+          Descripción <span className="optional-label">Opcional</span>
+        </span>
+        <textarea
+          rows={2}
+          maxLength={500}
+          value={description}
+          onChange={(e) => setDescription(e.target.value)}
+          placeholder="Agregá algún detalle sobre la publicación"
+        />
+      </label>
       <section className="image-upload-field" aria-labelledby="images-label">
         <div className="field-heading">
           <span id="images-label">Fotos</span>

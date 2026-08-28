@@ -8,6 +8,7 @@ export async function api<T>(path: string, options?: RequestInit): Promise<T> {
 }
 export const getListing = (id: string) =>
   api<Listing>(`/listings/${id}`, { next: { revalidate: 60 } } as RequestInit);
+export const getListings = () => api<Listing[]>("/listings", { cache: "no-store" });
 export const createListing = (input: CreateListingInput, token: string) =>
   api<Listing>("/listings", {
     method: "POST",
