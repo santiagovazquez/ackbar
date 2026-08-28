@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { getListing } from "../../../lib/api";
 import { ClaimControl } from "../../../components/claim-control";
+import { ImageCarousel } from "../../../components/image-carousel";
 import type { Currency } from "@swu/shared";
 const money = (cents: number | null, currency: Currency) =>
   cents == null
@@ -43,13 +44,7 @@ export default async function PublicationPage({ params }: { params: Promise<{ id
   return (
     <main>
       <article className="publication">
-        {listing.imageUrls.length > 0 && (
-          <div className="publication-gallery">
-            {listing.imageUrls.map((url, index) => (
-              <img key={url} src={url} alt={`Cartas de la publicación ${index + 1}`} />
-            ))}
-          </div>
-        )}
+        {listing.imageUrls.length > 0 && <ImageCarousel urls={listing.imageUrls} />}
         <p className="muted">
           {listing.kind === "sale" ? "VENTA" : "BÚSQUEDA"} · {listing.listingType.toUpperCase()} ·{" "}
           {listing.currency} · {listing.status.toUpperCase()}
