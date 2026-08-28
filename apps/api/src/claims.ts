@@ -1,0 +1,87 @@
+import { Router } from "express";
+import { z } from "zod";
+import { requireAuth } from "./auth.js";
+import { db } from "./db.js";
+
+export const claimsRouter = Router();
+claimsRouter.use(requireAuth);
+const claimSchema = z.object({
+  itemId: z.string().min(1),
+  quantity: z.number().int().positive(),
+  pricingMode: z.enum(["unit", "playset"]),
+});
+
+claimsRouter.post("/", async (req, res) => {
+  const parsed = claimSchema.safeParse(req.body);
+  if (!parsed.success) return res.status(400).json({ error: "Invalid claim" });
+  const { itemId, quantity, pricingMode } = parsed.data;
+  const transaction = await db.transaction("write");
+  try {
+    const itemResult = await transaction.execute({
+      sql: `SELECT i.*, l.owner_id, l.status, l.expires_at, i.quantity - COALESCE(SUM(CASE WHEN c.status != 'cancelled' THEN c.quantity ELSE 0 END),0) available FROM listing_items i JOIN listings l ON l.id=i.listing_id LEFT JOIN claims c ON c.item_id=i.id WHERE i.id=? GROUP BY i.id`,
+      args: [itemId],
+    });
+    const item = itemResult.rows[0];
+    if (!item || item.status !== "active" || String(item.expires_at) <= new Date().toISOString()) {
+      await transaction.rollback();
+      return res.status(409).json({ error: "Publication is not active" });
+    }
+    if (item.owner_id === req.user!.id) {
+      await transaction.rollback();
+      return res.status(409).json({ error: "You cannot claim your own publication" });
+    }
+    if (pricingMode === "playset" && quantity % 3 !== 0) {
+      await transaction.rollback();
+      return res.status(400).json({ error: "Playset quantity must be a multiple of three" });
+    }
+    if (Number(item.available) < quantity) {
+      await transaction.rollback();
+      return res.status(409).json({ error: "Not enough units available" });
+    }
+    const price = pricingMode === "playset" ? item.playset_price_cents : item.unit_price_cents;
+    if (price == null) {
+      await transaction.rollback();
+      return res.status(400).json({ error: "Selected pricing mode is unavailable" });
+    }
+    const amount = Number(price) * (pricingMode === "playset" ? quantity / 3 : quantity);
+    const id = crypto.randomUUID();
+    await transaction.execute({
+      sql: `INSERT INTO claims (id, item_id, user_id, quantity, pricing_mode, amount_cents, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)`,
+      args: [id, itemId, req.user!.id, quantity, pricingMode, amount, new Date().toISOString()],
+    });
+    await transaction.execute({
+      sql: `UPDATE listings SET status='closed' WHERE id=(SELECT listing_id FROM listing_items WHERE id=?) AND NOT EXISTS (SELECT 1 FROM listing_items i LEFT JOIN claims c ON c.item_id=i.id AND c.status != 'cancelled' WHERE i.listing_id=(SELECT listing_id FROM listing_items WHERE id=?) GROUP BY i.id HAVING i.quantity > COALESCE(SUM(c.quantity),0))`,
+      args: [itemId, itemId],
+    });
+    await transaction.commit();
+    res.status(201).json({ id, amountCents: amount });
+  } catch {
+    if (!transaction.closed) await transaction.rollback();
+    res.status(409).json({ error: "Claim could not be completed" });
+  }
+});
+
+claimsRouter.patch("/:id/status", async (req, res) => {
+  const body = z.object({ status: z.enum(["delivered", "received"]) }).safeParse(req.body);
+  if (!body.success) return res.status(400).json({ error: "Invalid status" });
+  const result = await db.execute({
+    sql: `UPDATE claims SET status=? WHERE id=? AND ((?='delivered' AND status='claimed') OR (?='received' AND status='delivered')) AND EXISTS (SELECT 1 FROM listing_items i JOIN listings l ON l.id=i.listing_id WHERE i.id=claims.item_id AND ((?='delivered' AND ((l.kind='sale' AND l.owner_id=?) OR (l.kind='wanted' AND claims.user_id=?))) OR (?='received' AND ((l.kind='sale' AND claims.user_id=?) OR (l.kind='wanted' AND l.owner_id=?)))))`,
+    args: [
+      body.data.status,
+      String(req.params.id),
+      body.data.status,
+      body.data.status,
+      body.data.status,
+      req.user!.id,
+      req.user!.id,
+      body.data.status,
+      req.user!.id,
+      req.user!.id,
+    ],
+  });
+  if (result.rowsAffected) {
+    res.status(204).end();
+  } else {
+    res.status(403).json({ error: "Status change is not allowed" });
+  }
+});
