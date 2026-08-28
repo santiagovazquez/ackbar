@@ -4,7 +4,7 @@ A community marketplace for buying, selling, and claiming Star Wars Unlimited si
 
 ## Architecture
 
-- `apps/web`: Next.js client deployed to Vercel.
+- `apps/web`: Next.js web application.
 - `apps/api`: Node.js/Express API. It uses local SQLite in development and Turso/libSQL in production.
 - `packages/shared`: shared TypeScript contracts.
 
@@ -13,7 +13,7 @@ Google sign-in is initiated entirely in the browser. Protected API routes indepe
 ## Local setup
 
 1. Install dependencies with `pnpm install`.
-2. Copy `.env.example` to `.env` and configure a Google OAuth Web client. Add a Vercel Blob read-write token to enable photo uploads; a public image URL can be used without it.
+2. Copy `.env.example` to `.env` and configure a Google OAuth Web client and S3 bucket credentials.
 3. Also expose the relevant variables to each app (for example through `apps/api/.env` and `apps/web/.env.local`).
 4. Run `pnpm db:migrate`.
 5. Run `pnpm db:seed` to download and import the current SWU card catalog.
@@ -32,7 +32,11 @@ The web client runs on port 4000 and the API on port 4001 by default.
 
 ## Production
 
-An ephemeral Vercel function cannot safely persist a local SQLite file. Create a free Turso database and set `DATABASE_URL` and `DATABASE_AUTH_TOKEN` for the API. Deploy `apps/api` as one Vercel project, then deploy `apps/web` as another with `NEXT_PUBLIC_API_URL` pointing to the API project. The included API entrypoint and rewrite configuration package Express as a Vercel function.
+Build the workspace with `pnpm build`, run the API with `pnpm --filter @swu/api start`, and run the web app with `pnpm --filter @swu/web start`. Set `NEXT_PUBLIC_API_URL` to the public API URL and `WEB_ORIGIN` to the public web URL. A process manager and reverse proxy can keep both services running behind HTTPS on a private server.
+
+Photo uploads use presigned S3 POSTs and go directly from the browser to the bucket. Configure `S3_BUCKET`, `S3_REGION`, `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, and `S3_PUBLIC_URL` in the web app environment. The bucket must allow public reads (or be fronted by the public CDN in `S3_PUBLIC_URL`) and its CORS policy must allow `POST` from the web origin. Each publication supports up to 24 images of 20 MB each.
+
+The API can use a persistent local SQLite file on a private server. Set `DATABASE_URL` to an absolute file URL such as `file:/var/lib/swu/marketplace.db`, or configure a remote libSQL database with `DATABASE_AUTH_TOKEN`.
 
 Publications expire seven days after creation. Soft deletion preserves claims and reputation history.
 

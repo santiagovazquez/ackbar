@@ -4,7 +4,9 @@ import type { CardInput, Currency, ListingKind, ListingType } from "@swu/shared"
 import { createListing } from "../lib/api";
 import { useAuth } from "./auth-provider";
 import { CardAutocomplete } from "./card-autocomplete";
-import { upload } from "@vercel/blob/client";
+
+const MAX_IMAGES = 24;
+const MAX_IMAGE_SIZE = 20 * 1024 * 1024;
 
 const emptyItem = (): CardInput => ({
   cardId: "",
@@ -64,10 +66,10 @@ export function ListingForm({ kind }: { kind: ListingKind }) {
       setError("Iniciá sesión para subir una foto.");
       return;
     }
-    const availableSlots = 12 - imageUrls.length;
+    const availableSlots = MAX_IMAGES - imageUrls.length;
     const selectedFiles = files.slice(0, availableSlots);
     if (!selectedFiles.length) {
-      setError("Podés subir hasta 12 imágenes por publicación.");
+      setError(`Podés subir hasta ${MAX_IMAGES} imágenes por publicación.`);
       return;
     }
     const acceptedTypes = new Set(["image/jpeg", "image/png", "image/webp"]);
@@ -75,19 +77,37 @@ export function ListingForm({ kind }: { kind: ListingKind }) {
       setError("Las imágenes deben ser JPG, PNG o WebP.");
       return;
     }
+    if (selectedFiles.some((file) => file.size > MAX_IMAGE_SIZE)) {
+      setError("Cada imagen debe pesar 20 MB o menos.");
+      return;
+    }
     setUploading(true);
     setError("");
     try {
-      const blobs = await Promise.all(
-        selectedFiles.map((file) =>
-          upload(`listing-images/${file.name}`, file, {
-            access: "public",
-            handleUploadUrl: "/api/upload",
-            headers: { Authorization: `Bearer ${token}` },
-          }),
-        ),
+      const urls = await Promise.all(
+        selectedFiles.map(async (file) => {
+          const response = await fetch("/api/upload", {
+            method: "POST",
+            headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+            body: JSON.stringify({ contentType: file.type, size: file.size }),
+          });
+          const upload = (await response.json()) as {
+            url?: string;
+            fields?: Record<string, string>;
+            publicUrl?: string;
+            error?: string;
+          };
+          if (!response.ok || !upload.url || !upload.fields || !upload.publicUrl)
+            throw new Error(upload.error ?? "No se pudo preparar la carga.");
+          const form = new FormData();
+          Object.entries(upload.fields).forEach(([name, value]) => form.append(name, value));
+          form.append("file", file);
+          const uploadResponse = await fetch(upload.url, { method: "POST", body: form });
+          if (!uploadResponse.ok) throw new Error("No se pudo subir la imagen a S3.");
+          return upload.publicUrl;
+        }),
       );
-      setImageUrls((current) => [...current, ...blobs.map((blob) => blob.url)].slice(0, 12));
+      setImageUrls((current) => [...current, ...urls].slice(0, MAX_IMAGES));
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : "No se pudo subir la foto.");
     } finally {
@@ -145,7 +165,9 @@ export function ListingForm({ kind }: { kind: ListingKind }) {
       <section className="image-upload-field" aria-labelledby="images-label">
         <div className="field-heading">
           <span id="images-label">Fotos</span>
-          <small>{imageUrls.length}/12</small>
+          <small>
+            {imageUrls.length}/{MAX_IMAGES}
+          </small>
         </div>
         <div
           className={`image-dropzone${dragging ? " dragging" : ""}`}
@@ -174,7 +196,7 @@ export function ListingForm({ kind }: { kind: ListingKind }) {
           </svg>
           <strong>{dragging ? "Soltá las imágenes acá" : "Arrastrá tus imágenes acá"}</strong>
           <span>o hacé clic para elegir varias</span>
-          <small>JPG, PNG o WebP · máximo 8 MB por imagen</small>
+          <small>JPG, PNG o WebP · máximo 20 MB por imagen</small>
         </div>
         <input
           ref={fileInput}

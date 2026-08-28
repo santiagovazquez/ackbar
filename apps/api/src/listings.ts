@@ -17,7 +17,7 @@ const createSchema = z
     listingType: z.enum(["singles", "bulk"]).default("singles"),
     currency: z.enum(["ARS", "USD"]).default("ARS"),
     title: z.string().min(1).max(120),
-    imageUrls: z.array(z.url()).min(1).max(12).optional(),
+    imageUrls: z.array(z.url()).min(1).max(24).optional(),
     items: z.array(cardSchema),
     bulkPriceCents: z.number().int().nonnegative().optional(),
   })
