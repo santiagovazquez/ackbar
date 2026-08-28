@@ -89,10 +89,14 @@ listingsRouter.get("/", async (req, res) => {
 });
 listingsRouter.get("/cards/search", async (req, res) => {
   const query = String(req.query.q ?? "").trim();
-  if (query.length < 2) return res.json([]);
+  if (query.length < 1) return res.json([]);
   const result = await db.execute({
-    sql: `SELECT id,name,subtitle,set_code,card_number FROM cards WHERE name LIKE ? OR subtitle LIKE ? ORDER BY name LIMIT 12`,
-    args: [`%${query}%`, `%${query}%`],
+    sql: `SELECT id,name,subtitle,set_code,card_number
+          FROM cards
+          WHERE name LIKE ? OR subtitle LIKE ?
+          ORDER BY CASE WHEN name LIKE ? THEN 0 ELSE 1 END, name, subtitle, set_code, card_number
+          LIMIT 25`,
+    args: [`%${query}%`, `%${query}%`, `${query}%`],
   });
   res.json(result.rows);
 });

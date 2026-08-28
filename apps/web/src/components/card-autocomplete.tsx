@@ -6,6 +6,8 @@ interface CardSuggestion {
   id: string;
   name: string;
   subtitle?: string | null;
+  set_code?: string | null;
+  card_number?: string | null;
 }
 export function CardAutocomplete({
   value,
@@ -17,21 +19,28 @@ export function CardAutocomplete({
   const listId = useId();
   const [suggestions, setSuggestions] = useState<CardSuggestion[]>([]);
   useEffect(() => {
-    if (value.trim().length < 2) return;
+    if (value.trim().length < 1) {
+      setSuggestions([]);
+      return;
+    }
     const controller = new AbortController();
     const timer = setTimeout(async () => {
-      const response = await fetch(
-        `${apiUrl}/listings/cards/search?q=${encodeURIComponent(value)}`,
-        { signal: controller.signal },
-      );
-      if (response.ok) setSuggestions(await response.json());
+      try {
+        const response = await fetch(
+          `${apiUrl}/listings/cards/search?q=${encodeURIComponent(value)}`,
+          { signal: controller.signal },
+        );
+        if (response.ok) setSuggestions(await response.json());
+      } catch (error) {
+        if (!(error instanceof DOMException && error.name === "AbortError")) setSuggestions([]);
+      }
     }, 180);
     return () => {
       clearTimeout(timer);
       controller.abort();
     };
   }, [value]);
-  const visibleSuggestions = value.trim().length < 2 ? [] : suggestions;
+  const visibleSuggestions = value.trim().length < 1 ? [] : suggestions;
   function change(nextValue: string) {
     const match = suggestions.find((card) => card.name === nextValue);
     onSelect(
@@ -52,7 +61,9 @@ export function CardAutocomplete({
       <datalist id={listId}>
         {visibleSuggestions.map((card) => (
           <option key={card.id} value={card.name}>
-            {card.subtitle ?? ""}
+            {[card.subtitle, card.set_code && `${card.set_code} #${card.card_number}`]
+              .filter(Boolean)
+              .join(" · ")}
           </option>
         ))}
       </datalist>
