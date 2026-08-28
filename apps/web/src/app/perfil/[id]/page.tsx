@@ -46,7 +46,7 @@ export default async function Profile({ params }: { params: Promise<{ id: string
             }) => (
               <a className="panel" href={`/publi/${listing.id}`} key={listing.id}>
                 {listing.image_url && <img src={listing.image_url} alt="" />}
-                <small>{listing.kind === "sale" ? "VENTA" : "BÚSQUEDA"}</small>
+                <small>VENTA</small>
                 {listing.description && <p>{listing.description}</p>}
               </a>
             ),

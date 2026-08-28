@@ -13,7 +13,7 @@ const cardSchema = z.object({
 });
 const createSchema = z
   .object({
-    kind: z.enum(["sale", "wanted"]),
+    kind: z.literal("sale"),
     listingType: z.enum(["singles", "bulk"]).default("singles"),
     currency: z.enum(["ARS", "USD"]).default("ARS"),
     description: z.string().trim().max(500).optional(),
@@ -22,7 +22,7 @@ const createSchema = z
     bulkPriceCents: z.number().int().nonnegative().optional(),
   })
   .superRefine((value, context) => {
-    if (value.kind === "sale" && !value.imageUrls?.length)
+    if (!value.imageUrls?.length)
       context.addIssue({
         code: "custom",
         path: ["imageUrls"],
@@ -101,12 +101,11 @@ async function serializeListing(id: string) {
 }
 
 listingsRouter.get("/", async (req, res) => {
-  const kind = req.query.kind === "sale" || req.query.kind === "wanted" ? req.query.kind : null;
   const result = await db.execute({
     sql: `SELECT id FROM listings
-          WHERE (? IS NULL OR kind=?) AND status='active' AND expires_at > ?
+          WHERE kind='sale' AND status='active' AND expires_at > ?
           ORDER BY created_at DESC, id DESC LIMIT 50`,
-    args: [kind, kind, new Date().toISOString()],
+    args: [new Date().toISOString()],
   });
   res.json(
     (await Promise.all(result.rows.map((row) => serializeListing(String(row.id))))).filter(Boolean),

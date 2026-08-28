@@ -39,9 +39,6 @@ export default async function Home() {
           <a className="button" href="/vendo">
             Publicar venta
           </a>
-          <a className="button secondary" href="/busco">
-            Estoy buscando
-          </a>
         </div>
       </section>
       <section className="feed" aria-labelledby="latest-publications">
@@ -64,9 +61,7 @@ export default async function Home() {
                     ) : (
                       <span aria-hidden="true">SWU</span>
                     )}
-                    <span className={`listing-kind ${listing.kind}`}>
-                      {listing.kind === "sale" ? "VENTA" : "BÚSQUEDA"}
-                    </span>
+                    <span className="listing-kind sale">VENTA</span>
                   </div>
                   <div className="listing-card-body">
                     <h3>{listingName(listing)}</h3>

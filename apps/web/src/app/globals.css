@@ -138,10 +138,6 @@ main {
   font-weight: 850;
   letter-spacing: 0.06em;
 }
-.listing-kind.wanted {
-  background: #d9e8ff;
-  color: #12345f;
-}
 .listing-card-body {
   padding: 17px;
 }

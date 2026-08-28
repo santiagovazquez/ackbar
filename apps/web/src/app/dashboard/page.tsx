@@ -156,9 +156,6 @@ export default function Dashboard() {
         <a className="button" href="/vendo">
           Publicar venta
         </a>
-        <a className="button secondary" href="/busco">
-          Publicar búsqueda
-        </a>
       </div>
       <div className="grid">
         <section className="panel">

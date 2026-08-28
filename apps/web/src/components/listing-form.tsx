@@ -36,7 +36,7 @@ export function ListingForm({ kind }: { kind: ListingKind }) {
       setError("Iniciá sesión con Google para publicar.");
       return;
     }
-    if ((kind === "sale" || listingType === "bulk") && imageUrls.length === 0) {
+    if (imageUrls.length === 0) {
       setError("Agregá una foto de las cartas para publicar la venta.");
       return;
     }

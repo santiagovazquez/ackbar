@@ -1,4 +1,4 @@
-export type ListingKind = "sale" | "wanted";
+export type ListingKind = "sale";
 export type ListingType = "singles" | "bulk";
 export type Currency = "ARS" | "USD";
 export type ListingStatus = "active" | "closed" | "expired" | "deleted";

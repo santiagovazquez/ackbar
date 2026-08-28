@@ -32,14 +32,14 @@ afterAll(() => {
   rmSync(databasePath, { force: true });
 });
 
-async function createPublication(kind: "sale" | "wanted", ownerToken: string) {
+async function createPublication(kind: "sale", ownerToken: string) {
   const response = await request
     .post("/listings")
     .set(authenticated(ownerToken))
     .send({
       kind,
-      description: kind === "sale" ? "Cards for sale" : "Cards wanted",
-      ...(kind === "sale" ? { imageUrls: ["https://example.com/cards.jpg"] } : {}),
+      description: "Cards for sale",
+      imageUrls: ["https://example.com/cards.jpg"],
       items: [
         {
           cardId: "luke-skywalker",
@@ -133,28 +133,11 @@ describe("marketplace lifecycle", () => {
     expect(Number(profile.body.seller_positive)).toBe(1);
   });
 
-  it("assigns seller and buyer responsibilities correctly for wanted publications", async () => {
-    const listing = await createPublication("wanted", "buyer-token");
-    const claim = await request
-      .post("/claims")
-      .set(authenticated("seller-token"))
-      .send({ itemId: listing.items[0].id, quantity: 1, pricingMode: "unit" });
-    expect(claim.status).toBe(201);
-    expect(
-      (
-        await request
-          .patch(`/claims/${claim.body.id}/status`)
-          .set(authenticated("seller-token"))
-          .send({ status: "delivered" })
-      ).status,
-    ).toBe(204);
-    expect(
-      (
-        await request
-          .patch(`/claims/${claim.body.id}/status`)
-          .set(authenticated("buyer-token"))
-          .send({ status: "received" })
-      ).status,
-    ).toBe(204);
+  it("rejects wanted publications", async () => {
+    const response = await request
+      .post("/listings")
+      .set(authenticated("buyer-token"))
+      .send({ kind: "wanted", items: [] });
+    expect(response.status).toBe(400);
   });
 });

@@ -47,7 +47,7 @@ export default async function PublicationPage({ params }: { params: Promise<{ id
       <article className="publication">
         {listing.imageUrls.length > 0 && <ImageCarousel urls={listing.imageUrls} />}
         <p className="muted">
-          {listing.kind === "sale" ? "VENTA" : "BÚSQUEDA"} · {listing.listingType.toUpperCase()} ·{" "}
+          VENTA · {listing.listingType.toUpperCase()} ·{" "}
           {listing.currency} · {listing.status.toUpperCase()}
         </p>
         {listing.description && <p className="listing-detail-description">{listing.description}</p>}
