@@ -7,6 +7,7 @@ export type RatingValue = "positive" | "neutral" | "negative";
 export interface CardInput {
   cardId: string;
   name: string;
+  detail?: string;
   quantity: number;
   unitPriceCents: number | null;
   playsetPriceCents: number | null;
@@ -16,10 +17,10 @@ export interface CreateListingInput {
   kind: ListingKind;
   listingType: ListingType;
   currency: Currency;
+  buyerPaysShipping?: boolean;
   description?: string;
   imageUrls?: string[];
   items: CardInput[];
-  bulkPriceCents?: number;
 }
 
 export interface UserSummary {
@@ -32,6 +33,7 @@ export interface ListingItem {
   id: string;
   cardId: string;
   name: string;
+  detail: string | null;
   quantity: number;
   availableQuantity: number;
   unitPriceCents: number | null;
@@ -43,6 +45,7 @@ export interface Listing {
   kind: ListingKind;
   listingType: ListingType;
   currency: Currency;
+  buyerPaysShipping: boolean;
   description: string | null;
   imageUrl: string | null;
   imageUrls: string[];

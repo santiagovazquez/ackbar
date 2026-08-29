@@ -44,6 +44,7 @@ async function createPublication(kind: "sale", ownerToken: string) {
         {
           cardId: "luke-skywalker",
           name: "Luke Skywalker",
+          detail: "Hyperspace foil",
           quantity: 3,
           unitPriceCents: 1000,
           playsetPriceCents: 2500,
@@ -55,7 +56,15 @@ async function createPublication(kind: "sale", ownerToken: string) {
 }
 
 describe("marketplace lifecycle", () => {
-  it("creates a USD bulk publication with only a photo and price", async () => {
+  it("rejects anonymous publications and claims", async () => {
+    expect((await request.post("/listings").send({})).status).toBe(401);
+    expect(
+      (await request.post("/claims").send({ itemId: "missing", quantity: 1, pricingMode: "unit" }))
+        .status,
+    ).toBe(401);
+  });
+
+  it("creates a USD other publication with individually priced items", async () => {
     const response = await request
       .post("/listings")
       .set(authenticated("seller-token"))
@@ -63,26 +72,51 @@ describe("marketplace lifecycle", () => {
         kind: "sale",
         listingType: "bulk",
         currency: "USD",
-        description: "Complete collection bulk",
+        buyerPaysShipping: true,
+        description: "Complete collection",
         imageUrls: ["https://example.com/bulk.jpg", "https://example.com/bulk-detail.jpg"],
-        bulkPriceCents: 12550,
-        items: [],
+        items: [
+          {
+            cardId: "other-collection",
+            name: "Artículo",
+            detail: "Complete collection",
+            quantity: 1,
+            unitPriceCents: 12550,
+            playsetPriceCents: null,
+          },
+          {
+            cardId: "other-tokens",
+            name: "Artículo",
+            detail: "Tokens",
+            quantity: 1,
+            unitPriceCents: 500,
+            playsetPriceCents: null,
+          },
+        ],
       });
 
     expect(response.status, JSON.stringify(response.body)).toBe(201);
     expect(response.body.listingType).toBe("bulk");
     expect(response.body.currency).toBe("USD");
+    expect(response.body.buyerPaysShipping).toBe(true);
     expect(response.body.imageUrls).toEqual([
       "https://example.com/bulk.jpg",
       "https://example.com/bulk-detail.jpg",
     ]);
     expect(response.body.imageUrl).toBe("https://example.com/bulk.jpg");
-    expect(response.body.items).toHaveLength(1);
-    expect(response.body.items[0].unitPriceCents).toBe(12550);
+    expect(response.body.items).toHaveLength(2);
+    expect(
+      response.body.items.find((item: { detail: string }) => item.detail === "Complete collection")
+        ?.unitPriceCents,
+    ).toBe(12550);
+    expect(response.body.items.some((item: { detail: string }) => item.detail === "Tokens")).toBe(
+      true,
+    );
   });
 
   it("closes a sale after a full playset claim and records fulfillment and rating", async () => {
     const listing = await createPublication("sale", "seller-token");
+    expect(listing.items[0].detail).toBe("Hyperspace foil");
     const claim = await request
       .post("/claims")
       .set(authenticated("buyer-token"))

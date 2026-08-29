@@ -12,12 +12,8 @@ export function ClaimControl({ item }: { item: ListingItem }) {
   const [quantity, setQuantity] = useState(mode === "playset" ? 3 : 1);
   const [message, setMessage] = useState("");
   const [busy, setBusy] = useState(false);
-  if (item.availableQuantity === 0) return null;
+  if (!token || item.availableQuantity === 0) return null;
   async function claim() {
-    if (!token) {
-      setMessage("Iniciá sesión para hacer un claim.");
-      return;
-    }
     setBusy(true);
     setMessage("");
     try {

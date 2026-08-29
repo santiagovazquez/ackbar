@@ -321,6 +321,59 @@ form {
   gap: 24px;
   align-items: end;
 }
+.shipping-field {
+  display: grid;
+  gap: 7px;
+  min-width: 260px;
+}
+.shipping-field > span {
+  font-weight: 700;
+}
+.shipping-option {
+  display: flex;
+  gap: 9px;
+  align-items: center;
+  min-height: 43px;
+  padding: 7px 11px;
+  border: 1px solid #d0d5dd;
+  border-radius: 10px;
+  background: #fff;
+  color: var(--muted);
+  cursor: pointer;
+  transition:
+    background 0.16s ease,
+    border-color 0.16s ease,
+    color 0.16s ease;
+}
+.shipping-option:hover {
+  border-color: #b78a0b;
+}
+.shipping-option:focus-within {
+  outline: 3px solid #e7b21c40;
+  outline-offset: 2px;
+}
+.shipping-option.active {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: var(--ink);
+}
+.shipping-check {
+  display: grid;
+  width: 24px;
+  height: 24px;
+  flex: 0 0 24px;
+  place-items: center;
+  border: 2px solid #98a2b3;
+  border-radius: 6px;
+  color: transparent;
+  font-size: 0.95rem;
+  line-height: 1;
+}
+.shipping-option.active .shipping-check {
+  border-color: var(--dark);
+  background: var(--dark);
+  color: var(--accent);
+}
 .toggle-field {
   min-width: 0;
   margin: 0;
@@ -563,13 +616,24 @@ textarea {
 }
 .item-row {
   display: grid;
-  grid-template-columns: minmax(260px, 1fr) 80px 120px 120px auto;
+  grid-template-columns: minmax(230px, 1fr) minmax(160px, 0.7fr) 80px 120px 120px auto;
+  gap: 9px;
+  align-items: end;
+}
+.article-row {
+  display: grid;
+  grid-template-columns: minmax(260px, 1fr) 160px auto;
   gap: 9px;
   align-items: end;
 }
 .item-row label,
-.item-row input {
+.item-row input,
+.article-row label,
+.article-row input {
   min-width: 0;
+}
+.article-row input {
+  width: 100%;
 }
 @media (min-width: 721px) {
   .item-row {
@@ -596,17 +660,25 @@ textarea {
   .item-row {
     grid-template-columns: 1fr 1fr;
   }
+  .article-row {
+    grid-template-columns: 1fr 1fr;
+  }
   .listing-options {
     gap: 12px;
+    flex-wrap: wrap;
   }
   .listing-options .toggle-field {
     flex: 1;
+  }
+  .shipping-field {
+    width: 100%;
   }
   .toggle-group button {
     flex: 1;
     padding-inline: 8px;
   }
-  .item-row label:first-child {
+  .item-row label:first-child,
+  .item-row label:nth-child(2) {
     grid-column: 1/-1;
   }
 }

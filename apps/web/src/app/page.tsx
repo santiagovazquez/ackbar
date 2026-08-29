@@ -1,5 +1,6 @@
 import type { Currency, Listing } from "@swu/shared";
 import { getListings } from "../lib/api";
+import { SellLink } from "../components/sell-link";
 
 const money = (cents: number | null, currency: Currency) =>
   cents == null
@@ -18,7 +19,7 @@ function listingPrice(listing: Listing) {
 }
 
 function listingName(listing: Listing) {
-  if (listing.listingType === "bulk") return "Bulk";
+  if (listing.listingType === "bulk") return "Otros artículos";
   const names = listing.items.slice(0, 2).map((item) => item.name);
   return `${names.join(", ")}${listing.items.length > 2 ? ` +${listing.items.length - 2}` : ""}`;
 }
@@ -36,9 +37,7 @@ export default async function Home() {
           la comunidad.
         </p>
         <div className="actions">
-          <a className="button" href="/vendo">
-            Publicar venta
-          </a>
+          <SellLink>Publicar venta</SellLink>
         </div>
       </section>
       <section className="feed" aria-labelledby="latest-publications">
@@ -70,7 +69,9 @@ export default async function Home() {
                     )}
                     {price && (
                       <p className="listing-price">
-                        {listing.listingType === "singles" ? "Desde " : ""}
+                        {listing.items.length > 1 || listing.listingType === "singles"
+                          ? "Desde "
+                          : ""}
                         {price}
                       </p>
                     )}
@@ -89,9 +90,7 @@ export default async function Home() {
           <div className="empty-feed">
             <h3>Todavía no hay publicaciones activas</h3>
             <p className="muted">Sé la primera persona en publicar cartas.</p>
-            <a className="button" href="/vendo">
-              Crear publicación
-            </a>
+            <SellLink>Crear publicación</SellLink>
           </div>
         )}
       </section>

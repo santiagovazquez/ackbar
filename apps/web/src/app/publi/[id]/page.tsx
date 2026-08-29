@@ -20,12 +20,13 @@ export async function generateMetadata({
     const listing = await getListing(id);
     const lines = listing.items
       .slice(0, 4)
-      .map(
-        (item) =>
-          `${item.quantity}× ${item.name} · ${money(item.unitPriceCents, listing.currency)}`,
+      .map((item) =>
+        listing.listingType === "bulk"
+          ? `${item.detail} · ${money(item.unitPriceCents, listing.currency)}`
+          : `${item.quantity}× ${item.name}${item.detail ? ` (${item.detail})` : ""} · ${money(item.unitPriceCents, listing.currency)}`,
       )
       .join(" | ");
-    const name = listing.listingType === "bulk" ? "Bulk" : listing.items[0]?.name;
+    const name = listing.listingType === "bulk" ? "Otros artículos" : listing.items[0]?.name;
     return {
       title: `${name ?? "Publicación"} · SWU Mercado`,
       description: listing.description ?? lines,
@@ -47,19 +48,27 @@ export default async function PublicationPage({ params }: { params: Promise<{ id
       <article className="publication">
         {listing.imageUrls.length > 0 && <ImageCarousel urls={listing.imageUrls} />}
         <p className="muted">
-          VENTA · {listing.listingType.toUpperCase()} ·{" "}
-          {listing.currency} · {listing.status.toUpperCase()}
+          VENTA · {listing.listingType === "bulk" ? "OTRO" : "SINGLES"} · {listing.currency} ·{" "}
+          {listing.status.toUpperCase()}
         </p>
         {listing.description && <p className="listing-detail-description">{listing.description}</p>}
         <p>
           Publicado por <a href={`/perfil/${listing.seller.id}`}>{listing.seller.name}</a>
         </p>
+        {listing.buyerPaysShipping && <p>Hago envíos a cargo del comprador.</p>}
         {listing.listingType === "bulk" ? (
           <section>
-            <h2>{money(listing.items[0]?.unitPriceCents ?? null, listing.currency)}</h2>
-            {listing.status === "active" && listing.items[0] && (
-              <ClaimControl item={listing.items[0]} />
-            )}
+            <h2>Artículos</h2>
+            {listing.items.map((item) => (
+              <section key={item.id} className={item.availableQuantity === 0 ? "locked" : ""}>
+                <h3>
+                  {item.availableQuantity === 0 ? "🔒 " : ""}
+                  {item.detail ?? item.name}
+                </h3>
+                <p>{money(item.unitPriceCents, listing.currency)}</p>
+                {listing.status === "active" && <ClaimControl item={item} />}
+              </section>
+            ))}
           </section>
         ) : (
           listing.items.map((item) => (
@@ -67,6 +76,7 @@ export default async function PublicationPage({ params }: { params: Promise<{ id
               <h2>
                 {item.availableQuantity === 0 ? "🔒 " : ""}
                 {item.name}
+                {item.detail && <small className="item-detail"> · {item.detail}</small>}
               </h2>
               <p>
                 {item.availableQuantity} de {item.quantity} disponibles · unidad{" "}

@@ -7,6 +7,7 @@ export const listingsRouter = Router();
 const cardSchema = z.object({
   cardId: z.string().min(1),
   name: z.string().min(1),
+  detail: z.string().trim().max(100).optional(),
   quantity: z.number().int().positive(),
   unitPriceCents: z.number().int().nonnegative().nullable(),
   playsetPriceCents: z.number().int().nonnegative().nullable(),
@@ -16,10 +17,10 @@ const createSchema = z
     kind: z.literal("sale"),
     listingType: z.enum(["singles", "bulk"]).default("singles"),
     currency: z.enum(["ARS", "USD"]).default("ARS"),
+    buyerPaysShipping: z.boolean().default(false),
     description: z.string().trim().max(500).optional(),
     imageUrls: z.array(z.url()).min(1).max(24).optional(),
     items: z.array(cardSchema),
-    bulkPriceCents: z.number().int().nonnegative().optional(),
   })
   .superRefine((value, context) => {
     if (!value.imageUrls?.length)
@@ -30,12 +31,8 @@ const createSchema = z
       });
     if (value.listingType === "singles" && value.items.length === 0)
       context.addIssue({ code: "custom", path: ["items"], message: "Singles require cards" });
-    if (value.listingType === "bulk" && value.bulkPriceCents == null)
-      context.addIssue({
-        code: "custom",
-        path: ["bulkPriceCents"],
-        message: "Bulk requires a price",
-      });
+    if (value.listingType === "bulk" && value.items.length === 0)
+      context.addIssue({ code: "custom", path: ["items"], message: "Other requires items" });
     if (value.listingType === "bulk" && !value.imageUrls?.length)
       context.addIssue({ code: "custom", path: ["imageUrls"], message: "Bulk requires a photo" });
     if (value.listingType === "singles")
@@ -51,6 +48,21 @@ const createSchema = z
             code: "custom",
             path: ["items", index, "playsetPriceCents"],
             message: "Playset pricing requires at least three units",
+          });
+      });
+    if (value.listingType === "bulk")
+      value.items.forEach((item, index) => {
+        if (!item.detail)
+          context.addIssue({
+            code: "custom",
+            path: ["items", index, "detail"],
+            message: "Item detail is required",
+          });
+        if (item.unitPriceCents == null)
+          context.addIssue({
+            code: "custom",
+            path: ["items", index, "unitPriceCents"],
+            message: "Item price is required",
           });
       });
   });
@@ -81,6 +93,7 @@ async function serializeListing(id: string) {
     kind: row.kind,
     listingType: row.listing_type,
     currency: row.currency,
+    buyerPaysShipping: Boolean(row.buyer_pays_shipping),
     description: row.description ? String(row.description) : null,
     imageUrl: imageUrls[0] ?? null,
     imageUrls,
@@ -92,6 +105,7 @@ async function serializeListing(id: string) {
       id: i.id,
       cardId: i.card_id,
       name: i.card_name,
+      detail: i.detail ? String(i.detail) : null,
       quantity: i.quantity,
       availableQuantity: i.available_quantity,
       unitPriceCents: i.unit_price_cents,
@@ -154,27 +168,17 @@ listingsRouter.post("/", requireAuth, async (req, res) => {
   const id = crypto.randomUUID();
   const now = new Date();
   const expires = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
-  const storedItems =
-    parsed.data.listingType === "bulk"
-      ? [
-          {
-            cardId: `bulk-${id}`,
-            name: "Bulk",
-            quantity: 1,
-            unitPriceCents: parsed.data.bulkPriceCents!,
-            playsetPriceCents: null,
-          },
-        ]
-      : parsed.data.items;
+  const storedItems = parsed.data.items;
   const statements = [
     {
-      sql: `INSERT INTO listings (id, owner_id, kind, listing_type, currency, title, description, image_url, created_at, expires_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      sql: `INSERT INTO listings (id, owner_id, kind, listing_type, currency, buyer_pays_shipping, title, description, image_url, created_at, expires_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       args: [
         id,
         req.user!.id,
         parsed.data.kind,
         parsed.data.listingType,
         parsed.data.currency,
+        parsed.data.buyerPaysShipping ? 1 : 0,
         "",
         parsed.data.description || null,
         parsed.data.imageUrls?.[0] ?? null,
@@ -192,12 +196,13 @@ listingsRouter.post("/", requireAuth, async (req, res) => {
         args: [item.cardId, item.name],
       },
       {
-        sql: `INSERT INTO listing_items (id, listing_id, card_id, card_name, quantity, unit_price_cents, playset_price_cents) VALUES (?, ?, ?, ?, ?, ?, ?)`,
+        sql: `INSERT INTO listing_items (id, listing_id, card_id, card_name, detail, quantity, unit_price_cents, playset_price_cents) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
         args: [
           crypto.randomUUID(),
           id,
           item.cardId,
           item.name,
+          item.detail || null,
           item.quantity,
           item.unitPriceCents,
           item.playsetPriceCents,

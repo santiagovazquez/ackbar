@@ -2,8 +2,8 @@
 import { GoogleOAuthProvider, GoogleLogin } from "@react-oauth/google";
 import { createContext, useContext, useEffect, useState } from "react";
 
-type Auth = { token: string | null; signOut: () => void };
-const AuthContext = createContext<Auth>({ token: null, signOut: () => undefined });
+type Auth = { token: string | null; isLoading: boolean; signOut: () => void };
+const AuthContext = createContext<Auth>({ token: null, isLoading: true, signOut: () => undefined });
 export const useAuth = () => useContext(AuthContext);
 
 function tokenExpiration(token: string) {
@@ -21,11 +21,13 @@ function tokenExpiration(token: string) {
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [token, setToken] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
   useEffect(() => {
     const storedToken = sessionStorage.getItem("google_id_token");
     const expiration = storedToken ? tokenExpiration(storedToken) : null;
     if (storedToken && expiration && expiration > Date.now()) setToken(storedToken);
     else sessionStorage.removeItem("google_id_token");
+    setIsLoading(false);
   }, []);
   const save = (value: string) => {
     sessionStorage.setItem("google_id_token", value);
@@ -52,15 +54,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [token]);
   return (
     <GoogleOAuthProvider clientId={process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID ?? ""}>
-      <AuthContext.Provider value={{ token, signOut }}>
+      <AuthContext.Provider value={{ token, isLoading, signOut }}>
         <header className="topbar">
           <a className="brand" href="/">
             SWU compraventa
           </a>
           <nav>
-            <a href="/vendo">Vendo</a>
-            <a href="/dashboard">Mi panel</a>
-            {token ? (
+            {token && <a href="/vendo">Vendo</a>}
+            {token && <a href="/dashboard">Mi panel</a>}
+            {isLoading ? null : token ? (
               <button className="link" onClick={signOut}>
                 Salir
               </button>

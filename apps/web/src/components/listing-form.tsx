@@ -11,6 +11,15 @@ const MAX_IMAGE_SIZE = 20 * 1024 * 1024;
 const emptyItem = (): CardInput => ({
   cardId: "",
   name: "",
+  detail: "",
+  quantity: 1,
+  unitPriceCents: null,
+  playsetPriceCents: null,
+});
+const emptyArticle = (): CardInput => ({
+  cardId: `other-${crypto.randomUUID()}`,
+  name: "Artículo",
+  detail: "",
   quantity: 1,
   unitPriceCents: null,
   playsetPriceCents: null,
@@ -19,10 +28,11 @@ export function ListingForm({ kind }: { kind: ListingKind }) {
   const { token } = useAuth();
   const [listingType, setListingType] = useState<ListingType>("singles");
   const [currency, setCurrency] = useState<Currency>("ARS");
+  const [buyerPaysShipping, setBuyerPaysShipping] = useState(false);
   const [description, setDescription] = useState("");
-  const [bulkPriceCents, setBulkPriceCents] = useState<number | null>(null);
   const [imageUrls, setImageUrls] = useState<string[]>([]);
   const [items, setItems] = useState<CardInput[]>([emptyItem()]);
+  const [articles, setArticles] = useState<CardInput[]>([emptyArticle()]);
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -30,6 +40,8 @@ export function ListingForm({ kind }: { kind: ListingKind }) {
   const fileInput = useRef<HTMLInputElement>(null);
   const update = (index: number, patch: Partial<CardInput>) =>
     setItems(items.map((item, i) => (i === index ? { ...item, ...patch } : item)));
+  const updateArticle = (index: number, patch: Partial<CardInput>) =>
+    setArticles(articles.map((item, i) => (i === index ? { ...item, ...patch } : item)));
   async function submit(event: React.FormEvent) {
     event.preventDefault();
     if (!token) {
@@ -48,10 +60,10 @@ export function ListingForm({ kind }: { kind: ListingKind }) {
           kind,
           listingType,
           currency,
+          buyerPaysShipping,
           ...(description.trim() ? { description: description.trim() } : {}),
           imageUrls: imageUrls.length ? imageUrls : undefined,
-          items: listingType === "singles" ? items : [],
-          ...(bulkPriceCents == null ? {} : { bulkPriceCents }),
+          items: listingType === "singles" ? items : articles,
         },
         token,
       );
@@ -128,7 +140,7 @@ export function ListingForm({ kind }: { kind: ListingKind }) {
                 aria-pressed={listingType === value}
                 onClick={() => setListingType(value)}
               >
-                {value === "singles" ? "Singles" : "Bulk"}
+                {value === "singles" ? "Singles" : "Otro"}
               </button>
             ))}
           </div>
@@ -149,19 +161,22 @@ export function ListingForm({ kind }: { kind: ListingKind }) {
             ))}
           </div>
         </fieldset>
+        <div className="shipping-field">
+          <span>Envíos</span>
+          <label className={`shipping-option${buyerPaysShipping ? " active" : ""}`}>
+            <input
+              className="visually-hidden"
+              type="checkbox"
+              checked={buyerPaysShipping}
+              onChange={(event) => setBuyerPaysShipping(event.target.checked)}
+            />
+            <span className="shipping-check" aria-hidden="true">
+              ✓
+            </span>
+            <span>A cargo del comprador</span>
+          </label>
+        </div>
       </div>
-      <label>
-        <span>
-          Descripción <span className="optional-label">Opcional</span>
-        </span>
-        <textarea
-          rows={2}
-          maxLength={500}
-          value={description}
-          onChange={(e) => setDescription(e.target.value)}
-          placeholder="Agregá algún detalle sobre la publicación"
-        />
-      </label>
       <section className="image-upload-field" aria-labelledby="images-label">
         <div className="field-heading">
           <span id="images-label">Fotos</span>
@@ -230,19 +245,53 @@ export function ListingForm({ kind }: { kind: ListingKind }) {
         )}
       </section>
       {listingType === "bulk" ? (
-        <label>
-          Precio
-          <input
-            className="number-without-stepper"
-            type="number"
-            min="0"
-            step="0.01"
-            required
-            onChange={(e) =>
-              setBulkPriceCents(e.target.value ? Math.round(Number(e.target.value) * 100) : null)
-            }
-          />
-        </label>
+        <>
+          <h2>Artículos</h2>
+          {articles.map((article, index) => (
+            <div className="article-row" key={article.cardId}>
+              <label>
+                Detalle
+                <input
+                  type="text"
+                  maxLength={100}
+                  required
+                  value={article.detail ?? ""}
+                  placeholder="Colección, accesorios u otro artículo"
+                  onChange={(e) => updateArticle(index, { detail: e.target.value })}
+                />
+              </label>
+              <label>
+                Precio
+                <input
+                  className="number-without-stepper"
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  required
+                  onChange={(e) =>
+                    updateArticle(index, {
+                      unitPriceCents: e.target.value
+                        ? Math.round(Number(e.target.value) * 100)
+                        : null,
+                    })
+                  }
+                />
+              </label>
+              {articles.length > 1 && (
+                <button
+                  type="button"
+                  aria-label="Quitar artículo"
+                  onClick={() => setArticles(articles.filter((_, i) => i !== index))}
+                >
+                  ×
+                </button>
+              )}
+            </div>
+          ))}
+          <button type="button" onClick={() => setArticles([...articles, emptyArticle()])}>
+            Agregar otro artículo
+          </button>
+        </>
       ) : (
         <>
           <h2>Cartas</h2>
@@ -253,6 +302,18 @@ export function ListingForm({ kind }: { kind: ListingKind }) {
                 <CardAutocomplete
                   value={item.name}
                   onSelect={(card) => update(index, { name: card.name, cardId: card.id })}
+                />
+              </label>
+              <label>
+                <span>
+                  Detalle <span className="optional-label">Opcional</span>
+                </span>
+                <input
+                  type="text"
+                  maxLength={100}
+                  value={item.detail ?? ""}
+                  placeholder="HS, Foil, Prestige…"
+                  onChange={(e) => update(index, { detail: e.target.value })}
                 />
               </label>
               <label>
@@ -305,10 +366,22 @@ export function ListingForm({ kind }: { kind: ListingKind }) {
             </div>
           ))}
           <button type="button" onClick={() => setItems([...items, emptyItem()])}>
-            Agregar carta
+            Agregar otra carta
           </button>
         </>
       )}
+      <label>
+        <span>
+          Descripción <span className="optional-label">Opcional</span>
+        </span>
+        <textarea
+          rows={4}
+          maxLength={500}
+          value={description}
+          onChange={(e) => setDescription(e.target.value)}
+          placeholder="Descripción, condiciones de venta, entrega, instrucciones, etc."
+        />
+      </label>
       {error && <p className="error">{error}</p>}
       <button disabled={busy || uploading}>{busy ? "Publicando…" : "Publicar"}</button>
     </form>

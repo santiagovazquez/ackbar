@@ -1,5 +1,6 @@
 "use client";
 import { useCallback, useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { useAuth } from "../../components/auth-provider";
 import { api } from "../../lib/api";
 
@@ -49,7 +50,8 @@ const money = (cents: number) =>
   }).format(cents / 100);
 
 export default function Dashboard() {
-  const { token } = useAuth();
+  const { token, isLoading } = useAuth();
+  const router = useRouter();
   const [data, setData] = useState<DashboardData | null>(null);
   const [error, setError] = useState("");
   const load = useCallback(async () => {
@@ -67,6 +69,9 @@ export default function Dashboard() {
   useEffect(() => {
     void load();
   }, [load]);
+  useEffect(() => {
+    if (!isLoading && !token) router.replace("/");
+  }, [isLoading, router, token]);
   async function updateStatus(id: string, status: "delivered" | "received") {
     if (!token) return;
     await api(`/claims/${id}/status`, {
@@ -93,13 +98,7 @@ export default function Dashboard() {
     });
     await load();
   }
-  if (!token)
-    return (
-      <main>
-        <h1>Mi panel</h1>
-        <p>Iniciá sesión con Google para ver tu actividad.</p>
-      </main>
-    );
+  if (isLoading || !token) return null;
   if (error)
     return (
       <main>
