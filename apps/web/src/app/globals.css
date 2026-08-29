@@ -125,11 +125,44 @@ main {
   text-transform: uppercase;
   white-space: nowrap;
 }
-.market-table tbody tr:last-child td {
+.market-listing-group {
+  cursor: pointer;
+  outline: 0;
+}
+.market-listing-group:not(:last-child) tr:last-child td {
+  border-bottom: 5px solid var(--paper);
+}
+.market-listing-group:last-child tr:last-child td {
   border-bottom: 0;
 }
-.market-table tbody tr:hover td {
+.market-listing-group:hover td,
+.market-listing-group:focus-visible td {
   background: #fffcf1;
+}
+.market-listing-group:focus-visible td:first-child {
+  box-shadow: inset 3px 0 #9a7508;
+}
+.market-thumbnail-cell {
+  width: 112px;
+  min-width: 112px;
+}
+.market-thumbnail,
+.market-thumbnail-placeholder {
+  display: grid;
+  width: 76px;
+  height: 76px;
+  border-radius: 9px;
+  place-items: center;
+}
+.market-thumbnail {
+  object-fit: cover;
+}
+.market-thumbnail-placeholder {
+  background: linear-gradient(135deg, #232a36, #101319);
+  color: var(--accent);
+  font-size: 0.9rem;
+  font-weight: 900;
+  letter-spacing: 0.08em;
 }
 .market-quantity {
   width: 92px;
@@ -149,20 +182,6 @@ main {
   font-variant-numeric: tabular-nums;
   font-weight: 700;
   white-space: nowrap;
-}
-.market-link {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  color: #765800;
-  font-size: 0.88rem;
-  font-weight: 800;
-  white-space: nowrap;
-}
-.market-link:hover {
-  color: #16191f;
-  text-decoration: underline;
-  text-underline-offset: 3px;
 }
 .hero {
   padding: 60px;
