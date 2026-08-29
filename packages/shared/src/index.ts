@@ -33,6 +33,7 @@ export interface ListingItem {
   id: string;
   cardId: string;
   name: string;
+  subtitle: string | null;
   detail: string | null;
   quantity: number;
   availableQuantity: number;

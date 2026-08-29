@@ -22,6 +22,11 @@ Google sign-in is initiated entirely in the browser. Protected API routes indepe
 `db:seed` downloads the public bulk export from SWU API and upserts cards in batches. Set
 `SWU_CARD_CATALOG_URL` to use a compatible mirror or fixture instead.
 
+To import test publications into the local SQLite database, edit
+`apps/api/seeds/local-listings.json` and run `pnpm db:seed:listings`. You can also pass a different
+JSON file after `--`, for example `pnpm db:seed:listings -- ./seeds/my-listings.json`. The command is
+idempotent for listing IDs and refuses to run in production or against a non-`file:` database.
+
 The web client runs on port 4000 and the API on port 4001 by default.
 
 ## Code quality

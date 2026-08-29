@@ -173,6 +173,16 @@ main {
   min-width: 230px;
   font-weight: 750;
 }
+.card-name,
+.card-subtitle {
+  display: block;
+}
+.card-subtitle {
+  margin-top: 2px;
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-weight: 500;
+}
 .market-detail {
   min-width: 170px;
   color: var(--muted);

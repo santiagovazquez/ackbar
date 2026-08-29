@@ -1,0 +1,280 @@
+{
+  "seller": {
+    "id": "local-seed-seller",
+    "email": "seller.local@example.com",
+    "name": "Vendedor de prueba",
+    "avatarUrl": null
+  },
+  "listings": [
+    {
+      "id": "local-whatsapp-publi1",
+      "listingType": "singles",
+      "currency": "ARS",
+      "buyerPaysShipping": false,
+      "description": "Koska Reeves Hyper 40k\n\nEntrego Ludus o PQ",
+      "imageUrls": [
+        "https://swu-compraventa-939091192753-us-west-2-an.s3.us-west-2.amazonaws.com/listing-images/local-seeds/publi1/WhatsApp%20Image%202026-08-29%20at%2011.01.33%20AM.jpeg"
+      ],
+      "createdAt": "2026-08-29T11:01:33-03:00",
+      "expiresInDays": 30,
+      "items": [
+        {
+          "id": "local-whatsapp-publi1-koska-reeves",
+          "cardId": "ASH_343",
+          "name": "Koska Reeves",
+          "detail": "HS",
+          "quantity": 1,
+          "unitPriceCents": 4000000,
+          "playsetPriceCents": null
+        }
+      ]
+    },
+    {
+      "id": "local-whatsapp-publi2",
+      "listingType": "bulk",
+      "currency": "ARS",
+      "buyerPaysShipping": false,
+      "description": "Vendo caja organizadora de cartas nueva (esta es la mía para que vean cómo es). 2400 cartas sin foliar, 1800 foliadas.\n\n$100.000 x1\n$190.000 x2\n\nEntrego en Ludus o en el PQ. Podría llegar a coordinar en Dados.",
+      "imageUrls": [
+        "https://swu-compraventa-939091192753-us-west-2-an.s3.us-west-2.amazonaws.com/listing-images/local-seeds/publi2/WhatsApp%20Image%202026-08-29%20at%2010.11.25%20AM.jpeg",
+        "https://swu-compraventa-939091192753-us-west-2-an.s3.us-west-2.amazonaws.com/listing-images/local-seeds/publi2/WhatsApp%20Image%202026-08-29%20at%2010.11.25%20AM%20%281%29.jpeg"
+      ],
+      "createdAt": "2026-08-29T10:11:25-03:00",
+      "expiresInDays": 30,
+      "items": [
+        {
+          "id": "local-whatsapp-publi2-caja-organizadora",
+          "cardId": "other-card-storage-box",
+          "name": "Artículo",
+          "detail": "Caja organizadora: $100.000 una o $190.000 dos",
+          "quantity": 2,
+          "unitPriceCents": 10000000,
+          "playsetPriceCents": null
+        }
+      ]
+    },
+    {
+      "id": "local-whatsapp-publi3",
+      "listingType": "bulk",
+      "currency": "ARS",
+      "buyerPaysShipping": false,
+      "description": "Set 2 y 3 completos\n$200.000 todo\nCada uno a $100.000\nEntrego un día antes del PQ o en el PQ",
+      "imageUrls": [
+        "https://swu-compraventa-939091192753-us-west-2-an.s3.us-west-2.amazonaws.com/listing-images/local-seeds/publi3/WhatsApp%20Image%202026-08-28%20at%209.23.54%20PM.jpeg",
+        "https://swu-compraventa-939091192753-us-west-2-an.s3.us-west-2.amazonaws.com/listing-images/local-seeds/publi3/WhatsApp%20Image%202026-08-28%20at%209.23.55%20PM.jpeg",
+        "https://swu-compraventa-939091192753-us-west-2-an.s3.us-west-2.amazonaws.com/listing-images/local-seeds/publi3/WhatsApp%20Image%202026-08-28%20at%209.23.55%20PM%20%281%29.jpeg",
+        "https://swu-compraventa-939091192753-us-west-2-an.s3.us-west-2.amazonaws.com/listing-images/local-seeds/publi3/WhatsApp%20Image%202026-08-28%20at%209.23.56%20PM.jpeg",
+        "https://swu-compraventa-939091192753-us-west-2-an.s3.us-west-2.amazonaws.com/listing-images/local-seeds/publi3/WhatsApp%20Image%202026-08-28%20at%209.23.56%20PM%20%281%29.jpeg",
+        "https://swu-compraventa-939091192753-us-west-2-an.s3.us-west-2.amazonaws.com/listing-images/local-seeds/publi3/WhatsApp%20Image%202026-08-28%20at%209.23.56%20PM%20%282%29.jpeg",
+        "https://swu-compraventa-939091192753-us-west-2-an.s3.us-west-2.amazonaws.com/listing-images/local-seeds/publi3/WhatsApp%20Image%202026-08-28%20at%209.23.57%20PM.jpeg",
+        "https://swu-compraventa-939091192753-us-west-2-an.s3.us-west-2.amazonaws.com/listing-images/local-seeds/publi3/WhatsApp%20Image%202026-08-28%20at%209.23.57%20PM%20%281%29.jpeg",
+        "https://swu-compraventa-939091192753-us-west-2-an.s3.us-west-2.amazonaws.com/listing-images/local-seeds/publi3/WhatsApp%20Image%202026-08-28%20at%209.23.57%20PM%20%282%29.jpeg"
+      ],
+      "createdAt": "2026-08-28T21:23:54-03:00",
+      "expiresInDays": 30,
+      "items": [
+        {
+          "id": "local-whatsapp-publi3-set-2",
+          "cardId": "other-complete-set-2",
+          "name": "Artículo",
+          "detail": "Set 2 completo",
+          "quantity": 1,
+          "unitPriceCents": 10000000,
+          "playsetPriceCents": null
+        },
+        {
+          "id": "local-whatsapp-publi3-set-3",
+          "cardId": "other-complete-set-3",
+          "name": "Artículo",
+          "detail": "Set 3 completo",
+          "quantity": 1,
+          "unitPriceCents": 10000000,
+          "playsetPriceCents": null
+        }
+      ]
+    },
+    {
+      "id": "local-whatsapp-publi4",
+      "listingType": "singles",
+      "currency": "ARS",
+      "buyerPaysShipping": false,
+      "description": "Escape Pod foil 2500\nSupremacy 3000\nValorum 2000\nStolen 28000\nConfidence 3000\nMasterpiece 15000\nAhsoka 7000 la común\n9000 la HS foil",
+      "imageUrls": [
+        "https://swu-compraventa-939091192753-us-west-2-an.s3.us-west-2.amazonaws.com/listing-images/local-seeds/publi4/WhatsApp%20Image%202026-08-28%20at%205.18.56%20PM.jpeg"
+      ],
+      "createdAt": "2026-08-28T17:18:56-03:00",
+      "expiresInDays": 30,
+      "items": [
+        {
+          "id": "local-whatsapp-publi4-escape-pod",
+          "cardId": "SEC_056",
+          "name": "Escape Pod",
+          "detail": "Foil",
+          "quantity": 1,
+          "unitPriceCents": 250000,
+          "playsetPriceCents": null
+        },
+        {
+          "id": "local-whatsapp-publi4-supremacy",
+          "cardId": "LOF_089",
+          "name": "Supremacy",
+          "quantity": 1,
+          "unitPriceCents": 300000,
+          "playsetPriceCents": null
+        },
+        {
+          "id": "local-whatsapp-publi4-valorum",
+          "cardId": "SEC_107",
+          "name": "Chancellor Valorum",
+          "quantity": 1,
+          "unitPriceCents": 200000,
+          "playsetPriceCents": null
+        },
+        {
+          "id": "local-whatsapp-publi4-stolen-at-hauler",
+          "cardId": "JTL_221",
+          "name": "Stolen AT-Hauler",
+          "quantity": 1,
+          "unitPriceCents": 2800000,
+          "playsetPriceCents": null
+        },
+        {
+          "id": "local-whatsapp-publi4-confidence",
+          "cardId": "SEC_145",
+          "name": "Confidence in Victory",
+          "quantity": 1,
+          "unitPriceCents": 300000,
+          "playsetPriceCents": null
+        },
+        {
+          "id": "local-whatsapp-publi4-masterpiece",
+          "cardId": "JTL_250",
+          "name": "Sabine's Masterpiece",
+          "quantity": 1,
+          "unitPriceCents": 1500000,
+          "playsetPriceCents": null
+        },
+        {
+          "id": "local-whatsapp-publi4-ahsoka-common",
+          "cardId": "SEC_096",
+          "name": "Ahsoka Tano",
+          "detail": "Común",
+          "quantity": 1,
+          "unitPriceCents": 700000,
+          "playsetPriceCents": null
+        },
+        {
+          "id": "local-whatsapp-publi4-ahsoka-hs-foil",
+          "cardId": "SEC_096",
+          "name": "Ahsoka Tano",
+          "detail": "HS Foil",
+          "quantity": 1,
+          "unitPriceCents": 900000,
+          "playsetPriceCents": null
+        }
+      ]
+    },
+    {
+      "id": "local-whatsapp-publi5",
+      "listingType": "bulk",
+      "currency": "ARS",
+      "buyerPaysShipping": false,
+      "description": "Starter pack de Ashes of the Empire. 1x todos los líderes comunes, 1x todas las bases y playset de todas las comunes (310 cartas), excepto: 2x The Way of the Mand'alor, 1x Pegasus Tri-Wing, 2x Stronger Together, 2x Outland TIE Protector, 1x Children of the Watch, 1x Remnant Interceptor y 2x Duchess's Protector. Entrego en Dados o El Abismo; no hago envíos. $50.000.",
+      "imageUrls": [
+        "https://swu-compraventa-939091192753-us-west-2-an.s3.us-west-2.amazonaws.com/listing-images/local-seeds/publi5/WhatsApp%20Image%202026-08-27%20at%202.45.55%20PM.jpeg"
+      ],
+      "createdAt": "2026-08-27T14:45:55-03:00",
+      "expiresInDays": 30,
+      "items": [
+        {
+          "id": "local-whatsapp-publi5-starter-pack",
+          "cardId": "other-ashes-starter-pack",
+          "name": "Artículo",
+          "detail": "Starter pack de Ashes of the Empire (310 cartas)",
+          "quantity": 1,
+          "unitPriceCents": 5000000,
+          "playsetPriceCents": null
+        }
+      ]
+    },
+    {
+      "id": "local-whatsapp-publi6",
+      "listingType": "singles",
+      "currency": "ARS",
+      "buyerPaysShipping": false,
+      "description": "Amidala: 15k\nVíctor leader: 12k\nAggressive Negotiations: 20k c/u o 55k el PS (hay 5)\nKallus: 3k\nIG-88 hyper: 6k\nCobb Vanth: 4.500\nHound's Tooth: 4k\nSabine: 3k\n\nEntrego el sábado en Ludus o el viernes 28 en Dados",
+      "imageUrls": [
+        "https://swu-compraventa-939091192753-us-west-2-an.s3.us-west-2.amazonaws.com/listing-images/local-seeds/publi6/WhatsApp%20Image%202026-08-19%20at%203.00.30%20PM.jpeg"
+      ],
+      "createdAt": "2026-08-19T15:00:30-03:00",
+      "expiresInDays": 30,
+      "items": [
+        {
+          "id": "local-whatsapp-publi6-amidala",
+          "cardId": "SEC_101",
+          "name": "Queen Amidala",
+          "quantity": 1,
+          "unitPriceCents": 1500000,
+          "playsetPriceCents": null
+        },
+        {
+          "id": "local-whatsapp-publi6-victor-leader",
+          "cardId": "JTL_085",
+          "name": "Victor Leader",
+          "quantity": 1,
+          "unitPriceCents": 1200000,
+          "playsetPriceCents": null
+        },
+        {
+          "id": "local-whatsapp-publi6-aggressive-negotiations",
+          "cardId": "SEC_179",
+          "name": "Aggressive Negotiations",
+          "quantity": 5,
+          "unitPriceCents": 2000000,
+          "playsetPriceCents": 5500000
+        },
+        {
+          "id": "local-whatsapp-publi6-kallus",
+          "cardId": "SEC_155",
+          "name": "Alexsandr Kallus",
+          "quantity": 1,
+          "unitPriceCents": 300000,
+          "playsetPriceCents": null
+        },
+        {
+          "id": "local-whatsapp-publi6-ig-88",
+          "cardId": "JTL_141",
+          "name": "IG-88",
+          "detail": "HS",
+          "quantity": 1,
+          "unitPriceCents": 600000,
+          "playsetPriceCents": null
+        },
+        {
+          "id": "local-whatsapp-publi6-cobb-vanth",
+          "cardId": "SHD_115",
+          "name": "Cobb Vanth",
+          "quantity": 1,
+          "unitPriceCents": 450000,
+          "playsetPriceCents": null
+        },
+        {
+          "id": "local-whatsapp-publi6-hounds-tooth",
+          "cardId": "JTL_185",
+          "name": "Hound's Tooth",
+          "quantity": 1,
+          "unitPriceCents": 400000,
+          "playsetPriceCents": null
+        },
+        {
+          "id": "local-whatsapp-publi6-sabine",
+          "cardId": "SOR_017",
+          "name": "Sabine Wren",
+          "quantity": 1,
+          "unitPriceCents": 300000,
+          "playsetPriceCents": null
+        }
+      ]
+    }
+  ]
+}

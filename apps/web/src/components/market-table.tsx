@@ -28,9 +28,9 @@ export function MarketTable({ listings }: { listings: Listing[] }) {
 
     return listings.flatMap((listing) => {
       const items = listing.items.filter((item) =>
-        normalize([item.name, item.detail, listing.description].filter(Boolean).join(" ")).includes(
-          normalizedQuery,
-        ),
+        normalize(
+          [item.name, item.subtitle, item.detail, listing.description].filter(Boolean).join(" "),
+        ).includes(normalizedQuery),
       );
       return items.length ? [{ ...listing, items }] : [];
     });
@@ -114,11 +114,18 @@ export function MarketTable({ listings }: { listings: Listing[] }) {
                         </td>
                       ) : (
                         <>
-                          <td className="market-article">{item.name}</td>
+                          <td className="market-article">
+                            <span className="card-name">{item.name}</span>
+                            {item.subtitle && (
+                              <small className="card-subtitle">{item.subtitle}</small>
+                            )}
+                          </td>
                           <td className="market-detail">{item.detail || "—"}</td>
                         </>
                       )}
-                      <td className="market-price">{money(item.unitPriceCents, listing.currency)}</td>
+                      <td className="market-price">
+                        {money(item.unitPriceCents, listing.currency)}
+                      </td>
                       <td className="market-price">
                         {isOther ? "—" : money(item.playsetPriceCents, listing.currency)}
                       </td>

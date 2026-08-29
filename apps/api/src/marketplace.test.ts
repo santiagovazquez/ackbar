@@ -117,6 +117,7 @@ describe("marketplace lifecycle", () => {
   it("closes a sale after a full playset claim and records fulfillment and rating", async () => {
     const listing = await createPublication("sale", "seller-token");
     expect(listing.items[0].detail).toBe("Hyperspace foil");
+    expect(listing.items[0].subtitle).toBeNull();
     const claim = await request
       .post("/claims")
       .set(authenticated("buyer-token"))

@@ -13,7 +13,8 @@
     "typecheck": "pnpm -r typecheck",
     "test": "pnpm -r test",
     "db:migrate": "pnpm --filter @swu/api db:migrate",
-    "db:seed": "pnpm --filter @swu/api db:seed"
+    "db:seed": "pnpm --filter @swu/api db:seed",
+    "db:seed:listings": "pnpm --filter @swu/api db:seed:listings"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",

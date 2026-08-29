@@ -157,7 +157,10 @@ export function ClaimControl({ listing }: { listing: Listing }) {
                   }
                 >
                   <td>{item.availableQuantity}</td>
-                  <td>{item.name}</td>
+                  <td>
+                    <span className="card-name">{item.name}</span>
+                    {item.subtitle && <small className="card-subtitle">{item.subtitle}</small>}
+                  </td>
                   <td>{item.detail ?? "—"}</td>
                   <td>{money(item.unitPriceCents, listing.currency)}</td>
                   <td>{money(item.playsetPriceCents, listing.currency)}</td>
