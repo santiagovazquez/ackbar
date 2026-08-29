@@ -118,7 +118,7 @@ listingsRouter.get("/", async (req, res) => {
   const result = await db.execute({
     sql: `SELECT id FROM listings
           WHERE kind='sale' AND status='active' AND expires_at > ?
-          ORDER BY created_at DESC, id DESC LIMIT 50`,
+          ORDER BY created_at DESC, id DESC`,
     args: [new Date().toISOString()],
   });
   res.json(
