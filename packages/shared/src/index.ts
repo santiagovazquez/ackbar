@@ -34,6 +34,7 @@ export interface ListingItem {
   cardId: string;
   name: string;
   subtitle: string | null;
+  setCode: string | null;
   detail: string | null;
   quantity: number;
   availableQuantity: number;

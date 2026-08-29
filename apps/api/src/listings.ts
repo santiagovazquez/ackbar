@@ -79,7 +79,7 @@ async function serializeListing(id: string) {
   const row = listing.rows[0];
   if (!row) return null;
   const items = await db.execute({
-    sql: `SELECT i.*, card.subtitle,
+    sql: `SELECT i.*, card.subtitle, card.set_code,
                  i.quantity - COALESCE(SUM(CASE WHEN c.status != 'cancelled' THEN c.quantity ELSE 0 END),0) available_quantity
           FROM listing_items i
           LEFT JOIN cards card ON card.id=i.card_id
@@ -112,6 +112,7 @@ async function serializeListing(id: string) {
       cardId: i.card_id,
       name: i.card_name,
       subtitle: i.subtitle ? String(i.subtitle) : null,
+      setCode: i.set_code ? String(i.set_code) : null,
       detail: i.detail ? String(i.detail) : null,
       quantity: i.quantity,
       availableQuantity: i.available_quantity,

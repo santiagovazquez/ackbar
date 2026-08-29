@@ -106,7 +106,7 @@ main {
 }
 .market-table {
   width: 100%;
-  min-width: 960px;
+  min-width: 790px;
   border-collapse: collapse;
   text-align: left;
 }
@@ -209,24 +209,49 @@ main {
   font-weight: 750;
 }
 .card-name,
-.card-subtitle {
+.card-detail {
   display: block;
 }
-.card-subtitle {
+.card-detail {
   margin-top: 2px;
   color: var(--muted);
   font-size: 0.78rem;
   font-weight: 500;
 }
-.market-detail {
-  min-width: 170px;
+.card-set {
+  margin-left: 6px;
   color: var(--muted);
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+.card-set::before {
+  content: "·";
+  margin-right: 6px;
 }
 .market-price {
+  position: sticky;
+  z-index: 1;
   min-width: 145px;
+  background: #fff;
   font-variant-numeric: tabular-nums;
   font-weight: 700;
+  text-align: right;
   white-space: nowrap;
+}
+.market-table th.market-price {
+  z-index: 3;
+  background: #f8f8f6;
+  text-align: right;
+}
+.market-unit-price {
+  right: 145px;
+}
+.market-playset-price {
+  right: 0;
+}
+.market-listing-group:hover .market-price,
+.market-listing-group:focus-visible .market-price {
+  background: #fffcf1;
 }
 .hero {
   padding: 60px;
@@ -856,6 +881,19 @@ textarea {
   resize: vertical;
 }
 @media (max-width: 620px) {
+  .market-table {
+    min-width: 590px;
+  }
+  .market-image-heading,
+  .market-thumbnail-cell {
+    display: none;
+  }
+  .market-quantity-heading,
+  .market-quantity {
+    width: 36px;
+    min-width: 36px;
+    padding-inline: 6px;
+  }
   .hero {
     padding: 36px 24px;
   }

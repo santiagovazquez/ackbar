@@ -20,6 +20,12 @@ const normalize = (value: string) =>
     .replace(/[\u0300-\u036f]/g, "")
     .toLocaleLowerCase("es");
 
+const setCodeFor = (item: Listing["items"][number]) => {
+  if (item.setCode) return item.setCode;
+  const match = item.cardId.match(/^([A-Z0-9]+)_\d+$/i);
+  return match?.[1]?.toUpperCase() ?? null;
+};
+
 export function MarketTable({ listings }: { listings: Listing[] }) {
   const router = useRouter();
   const [query, setQuery] = useState("");
@@ -30,7 +36,7 @@ export function MarketTable({ listings }: { listings: Listing[] }) {
     return listings.flatMap((listing) => {
       const items = listing.items.filter((item) =>
         normalize(
-          [item.name, item.subtitle, item.detail, listing.description].filter(Boolean).join(" "),
+          [item.name, setCodeFor(item), item.detail, listing.description].filter(Boolean).join(" "),
         ).includes(normalizedQuery),
       );
       return items.length ? [{ ...listing, items }] : [];
@@ -66,12 +72,15 @@ export function MarketTable({ listings }: { listings: Listing[] }) {
           <table className="market-table">
             <thead>
               <tr>
-                <th aria-label="Imagen">Foto</th>
-                <th aria-label="Cantidad" />
+                <th className="market-image-heading" aria-label="Imagen" />
+                <th className="market-quantity-heading" aria-label="Cantidad" />
                 <th>Artículo</th>
-                <th>Detalle</th>
-                <th>Precio unitario</th>
-                <th>Precio playset</th>
+                <th className="market-price market-unit-price" aria-label="Precio unitario">
+                  Unidad
+                </th>
+                <th className="market-price market-playset-price" aria-label="Precio playset">
+                  PS
+                </th>
               </tr>
             </thead>
             {filteredListings.map((listing) => (
@@ -90,7 +99,7 @@ export function MarketTable({ listings }: { listings: Listing[] }) {
                 }}
               >
                 <tr className="market-publication-intro">
-                  <td colSpan={6}>
+                  <td colSpan={5}>
                     <div className="market-publication-summary">
                       <span className="market-publication-meta">
                         <strong>{listing.seller.name}</strong>
@@ -112,6 +121,7 @@ export function MarketTable({ listings }: { listings: Listing[] }) {
                 </tr>
                 {listing.items.map((item, index) => {
                   const isOther = listing.listingType === "bulk";
+                  const setCode = setCodeFor(item);
                   return (
                     <tr key={item.id}>
                       {index === 0 && (
@@ -131,24 +141,20 @@ export function MarketTable({ listings }: { listings: Listing[] }) {
                       )}
                       <td className="market-quantity">{isOther ? "" : item.availableQuantity}</td>
                       {isOther ? (
-                        <td colSpan={2} className="market-article">
-                          {item.detail || item.name}
-                        </td>
+                        <td className="market-article">{item.detail || item.name}</td>
                       ) : (
-                        <>
-                          <td className="market-article">
-                            <span className="card-name">{item.name}</span>
-                            {item.subtitle && (
-                              <small className="card-subtitle">{item.subtitle}</small>
-                            )}
-                          </td>
-                          <td className="market-detail">{item.detail || "—"}</td>
-                        </>
+                        <td className="market-article">
+                          <span className="card-name">
+                            {item.name}
+                            {setCode && <small className="card-set">{setCode}</small>}
+                          </span>
+                          {item.detail && <small className="card-detail">{item.detail}</small>}
+                        </td>
                       )}
-                      <td className="market-price">
+                      <td className="market-price market-unit-price">
                         {money(item.unitPriceCents, listing.currency)}
                       </td>
-                      <td className="market-price">
+                      <td className="market-price market-playset-price">
                         {isOther ? "—" : money(item.playsetPriceCents, listing.currency)}
                       </td>
                     </tr>
