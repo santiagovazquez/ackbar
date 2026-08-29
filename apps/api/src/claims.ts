@@ -11,6 +11,57 @@ const claimSchema = z.object({
   pricingMode: z.enum(["unit", "playset"]),
 });
 
+claimsRouter.post("/batch", async (req, res) => {
+  const parsed = z.object({ claims: z.array(claimSchema).min(1).max(100) }).safeParse(req.body);
+  if (!parsed.success) return res.status(400).json({ error: "Invalid claims" });
+  const transaction = await db.transaction("write");
+  const created: { id: string; amountCents: number }[] = [];
+  const listingIds = new Set<string>();
+  try {
+    for (const { itemId, quantity, pricingMode } of parsed.data.claims) {
+      const itemResult = await transaction.execute({
+        sql: `SELECT i.*, l.id listing_id, l.owner_id, l.status, l.expires_at, i.quantity - COALESCE(SUM(CASE WHEN c.status != 'cancelled' THEN c.quantity ELSE 0 END),0) available FROM listing_items i JOIN listings l ON l.id=i.listing_id LEFT JOIN claims c ON c.item_id=i.id WHERE i.id=? GROUP BY i.id`,
+        args: [itemId],
+      });
+      const item = itemResult.rows[0];
+      if (!item || item.status !== "active" || String(item.expires_at) <= new Date().toISOString())
+        throw new Error("Publication is not active");
+      if (item.owner_id === req.user!.id) throw new Error("You cannot claim your own publication");
+      if (pricingMode === "playset" && quantity % 3 !== 0)
+        throw new Error("Playset quantity must be a multiple of three");
+      if (Number(item.available) < quantity) throw new Error("Not enough units available");
+      const price = pricingMode === "playset" ? item.playset_price_cents : item.unit_price_cents;
+      if (price == null) throw new Error("Selected pricing mode is unavailable");
+      const amount = Number(price) * (pricingMode === "playset" ? quantity / 3 : quantity);
+      const id = crypto.randomUUID();
+      await transaction.execute({
+        sql: `INSERT INTO claims (id, item_id, user_id, quantity, pricing_mode, amount_cents, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)`,
+        args: [id, itemId, req.user!.id, quantity, pricingMode, amount, new Date().toISOString()],
+      });
+      created.push({ id, amountCents: amount });
+      listingIds.add(String(item.listing_id));
+    }
+    for (const listingId of listingIds) {
+      await transaction.execute({
+        sql: `UPDATE listings SET status='closed' WHERE id=? AND NOT EXISTS (SELECT 1 FROM listing_items i LEFT JOIN claims c ON c.item_id=i.id AND c.status != 'cancelled' WHERE i.listing_id=? GROUP BY i.id HAVING i.quantity > COALESCE(SUM(c.quantity),0))`,
+        args: [listingId, listingId],
+      });
+    }
+    await transaction.commit();
+    res
+      .status(201)
+      .json({
+        claims: created,
+        amountCents: created.reduce((sum, claim) => sum + claim.amountCents, 0),
+      });
+  } catch (error) {
+    if (!transaction.closed) await transaction.rollback();
+    res
+      .status(409)
+      .json({ error: error instanceof Error ? error.message : "Claims could not be completed" });
+  }
+});
+
 claimsRouter.post("/", async (req, res) => {
   const parsed = claimSchema.safeParse(req.body);
   if (!parsed.success) return res.status(400).json({ error: "Invalid claim" });

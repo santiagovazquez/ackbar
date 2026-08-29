@@ -47,48 +47,35 @@ export default async function PublicationPage({ params }: { params: Promise<{ id
     <main>
       <article className="publication">
         {listing.imageUrls.length > 0 && <ImageCarousel urls={listing.imageUrls} />}
-        <p className="muted">
-          VENTA · {listing.listingType === "bulk" ? "OTRO" : "SINGLES"} · {listing.currency} ·{" "}
-          {listing.status.toUpperCase()}
+        <div className="publication-heading">
+          <p className="muted">
+            VENTA · {listing.listingType === "bulk" ? "OTRO" : "SINGLES"} ·{" "}
+            {listing.status.toUpperCase()}
+          </p>
+          {listing.buyerPaysShipping && (
+            <span className="shipping-pill">Envío a cargo del comprador</span>
+          )}
+        </div>
+        <p className="publication-byline">
+          Publicado por <a href={`/perfil/${listing.seller.id}`}>{listing.seller.name}</a>{" "}
+          <time dateTime={listing.createdAt}>{formatDuration(listing.createdAt)}</time>
         </p>
         {listing.description && <p className="listing-detail-description">{listing.description}</p>}
-        <p>
-          Publicado por <a href={`/perfil/${listing.seller.id}`}>{listing.seller.name}</a>
-        </p>
-        {listing.buyerPaysShipping && <p>Hago envíos a cargo del comprador.</p>}
-        {listing.listingType === "bulk" ? (
-          <section>
-            <h2>Artículos</h2>
-            {listing.items.map((item) => (
-              <section key={item.id} className={item.availableQuantity === 0 ? "locked" : ""}>
-                <h3>
-                  {item.availableQuantity === 0 ? "🔒 " : ""}
-                  {item.detail ?? item.name}
-                </h3>
-                <p>{money(item.unitPriceCents, listing.currency)}</p>
-                {listing.status === "active" && <ClaimControl item={item} />}
-              </section>
-            ))}
-          </section>
-        ) : (
-          listing.items.map((item) => (
-            <section key={item.id} className={item.availableQuantity === 0 ? "locked" : ""}>
-              <h2>
-                {item.availableQuantity === 0 ? "🔒 " : ""}
-                {item.name}
-                {item.detail && <small className="item-detail"> · {item.detail}</small>}
-              </h2>
-              <p>
-                {item.availableQuantity} de {item.quantity} disponibles · unidad{" "}
-                {money(item.unitPriceCents, listing.currency)}
-                {item.playsetPriceCents != null &&
-                  ` · playset ${money(item.playsetPriceCents, listing.currency)}`}
-              </p>
-              {listing.status === "active" && <ClaimControl item={item} />}
-            </section>
-          ))
-        )}
+        <ClaimControl listing={listing} />
       </article>
     </main>
   );
+}
+
+function formatDuration(date: string) {
+  const elapsed = Math.max(0, Math.floor((Date.now() - new Date(date).getTime()) / 1000));
+  if (elapsed < 60) return "hace unos segundos";
+  const units = [
+    { seconds: 86400, name: "día" },
+    { seconds: 3600, name: "hora" },
+    { seconds: 60, name: "minuto" },
+  ];
+  const unit = units.find(({ seconds }) => elapsed >= seconds)!;
+  const value = Math.floor(elapsed / unit.seconds);
+  return `hace ${value} ${unit.name}${value === 1 ? "" : "s"}`;
 }
