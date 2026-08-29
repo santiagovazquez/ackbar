@@ -47,15 +47,9 @@ export default async function PublicationPage({ params }: { params: Promise<{ id
     <main>
       <article className="publication">
         {listing.imageUrls.length > 0 && <ImageCarousel urls={listing.imageUrls} />}
-        <div className="publication-heading">
-          <p className="muted">
-            VENTA · {listing.listingType === "bulk" ? "OTRO" : "SINGLES"} ·{" "}
-            {listing.status.toUpperCase()}
-          </p>
-          {listing.buyerPaysShipping && (
-            <span className="shipping-pill">Envío a cargo del comprador</span>
-          )}
-        </div>
+        {listing.buyerPaysShipping && (
+          <span className="shipping-pill">Envío a cargo del comprador</span>
+        )}
         <p className="publication-byline">
           Publicado por <a href={`/perfil/${listing.seller.id}`}>{listing.seller.name}</a>{" "}
           <time dateTime={listing.createdAt}>{formatDuration(listing.createdAt)}</time>

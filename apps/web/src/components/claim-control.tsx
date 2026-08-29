@@ -32,18 +32,18 @@ export function ClaimControl({ listing }: { listing: Listing }) {
     (sum, item) => sum + totalFor(item, selection[item.id] ?? 0),
     0,
   );
+  const selectedQuantity = selectedItems.reduce((sum, item) => sum + (selection[item.id] ?? 0), 0);
 
-  function add(item: ListingItem, quantity: number) {
+  function changeQuantity(item: ListingItem, delta: number) {
     setMessage("");
-    setSelection((current) => ({
-      ...current,
-      [item.id]: Math.min(item.availableQuantity, (current[item.id] ?? 0) + quantity),
-    }));
-  }
-  function remove(item: ListingItem) {
     setSelection((current) => {
+      const quantity = Math.max(
+        0,
+        Math.min(item.availableQuantity, (current[item.id] ?? 0) + delta),
+      );
       const next = { ...current };
-      delete next[item.id];
+      if (quantity === 0) delete next[item.id];
+      else next[item.id] = quantity;
       return next;
     });
   }
@@ -80,30 +80,46 @@ export function ClaimControl({ listing }: { listing: Listing }) {
       setBusy(false);
     }
   }
-  const actions = (item: ListingItem) =>
-    listing.status === "active" && item.availableQuantity > 0 ? (
-      <div className="table-actions">
+  const actions = (item: ListingItem) => {
+    if (listing.status !== "active" || item.availableQuantity === 0) return null;
+
+    const quantity = selection[item.id] ?? 0;
+    return (
+      <div className="table-actions" aria-label={`Cantidad a claimear de ${item.name}`}>
+        {quantity > 0 && (
+          <button
+            type="button"
+            className="quantity-action"
+            aria-label={`Quitar una unidad de ${item.name}`}
+            onClick={() => changeQuantity(item, -1)}
+          >
+            −
+          </button>
+        )}
+        <output className={quantity > 0 ? "claim-quantity selected" : "claim-quantity"}>
+          {quantity}
+        </output>
         {item.unitPriceCents != null && (
           <button
             type="button"
-            onClick={() => add(item, 1)}
-            disabled={(selection[item.id] ?? 0) >= item.availableQuantity}
+            onClick={() => changeQuantity(item, 1)}
+            disabled={quantity >= item.availableQuantity}
           >
-            Claim
+            +1
           </button>
         )}
         {item.playsetPriceCents != null && item.availableQuantity >= 3 && (
           <button
             type="button"
-            className="secondary-action"
-            onClick={() => add(item, 3)}
-            disabled={(selection[item.id] ?? 0) + 3 > item.availableQuantity}
+            onClick={() => changeQuantity(item, 3)}
+            disabled={quantity + 3 > item.availableQuantity}
           >
-            Claim PS
+            +PS
           </button>
         )}
       </div>
-    ) : null;
+    );
+  };
 
   return (
     <>
@@ -117,20 +133,29 @@ export function ClaimControl({ listing }: { listing: Listing }) {
                 <th>Detalle</th>
                 <th>Precio unitario</th>
                 <th>Precio playset</th>
-                <th>Acciones</th>
+                <th>A claimear</th>
               </tr>
             ) : (
               <tr>
                 <th>Detalle</th>
                 <th>Precio</th>
-                <th>Acción</th>
+                <th>A claimear</th>
               </tr>
             )}
           </thead>
           <tbody>
             {listing.items.map((item) =>
               listing.listingType === "singles" ? (
-                <tr key={item.id} className={item.availableQuantity === 0 ? "locked" : ""}>
+                <tr
+                  key={item.id}
+                  className={
+                    item.availableQuantity === 0
+                      ? "locked"
+                      : (selection[item.id] ?? 0) > 0
+                        ? "claim-selected"
+                        : ""
+                  }
+                >
                   <td>{item.availableQuantity}</td>
                   <td>{item.name}</td>
                   <td>{item.detail ?? "—"}</td>
@@ -139,7 +164,16 @@ export function ClaimControl({ listing }: { listing: Listing }) {
                   <td>{actions(item)}</td>
                 </tr>
               ) : (
-                <tr key={item.id} className={item.availableQuantity === 0 ? "locked" : ""}>
+                <tr
+                  key={item.id}
+                  className={
+                    item.availableQuantity === 0
+                      ? "locked"
+                      : (selection[item.id] ?? 0) > 0
+                        ? "claim-selected"
+                        : ""
+                  }
+                >
                   <td>{item.detail ?? item.name}</td>
                   <td>{money(item.unitPriceCents, listing.currency)}</td>
                   <td>{actions(item)}</td>
@@ -151,34 +185,27 @@ export function ClaimControl({ listing }: { listing: Listing }) {
       </div>
       {selectedItems.length > 0 && (
         <aside className="claim-summary" aria-label="Claims a confirmar">
-          <h2>Tus claims</h2>
-          <div className="claim-summary-items">
-            {selectedItems.map((item) => (
-              <div className="claim-summary-item" key={item.id}>
-                <span>
-                  <strong>{selection[item.id]}×</strong>{" "}
-                  {listing.listingType === "bulk" ? (item.detail ?? item.name) : item.name}
-                </span>
-                <span>{money(totalFor(item, selection[item.id] ?? 0), listing.currency)}</span>
-                <button
-                  type="button"
-                  className="remove-claim"
-                  aria-label={`Quitar ${item.name}`}
-                  onClick={() => remove(item)}
-                >
-                  ×
-                </button>
-              </div>
-            ))}
-          </div>
+          <p className="claim-summary-count">
+            {selectedQuantity} {selectedQuantity === 1 ? "carta" : "cartas"} en tu claim
+          </p>
           <p className="claim-total">
             <span>Total</span>
             <strong>{money(total, listing.currency)}</strong>
           </p>
-          <button type="button" onClick={confirm} disabled={busy}>
-            {busy ? "Confirmando…" : "Confirmar claims"}
-          </button>
-          {message && <small>{message}</small>}
+          <div className="claim-summary-actions">
+            <button
+              type="button"
+              className="secondary-action"
+              onClick={() => setSelection({})}
+              disabled={busy}
+            >
+              Limpiar
+            </button>
+            <button type="button" onClick={confirm} disabled={busy}>
+              {busy ? "Confirmando…" : "Confirmar claims"}
+            </button>
+          </div>
+          {message && <small role="status">{message}</small>}
         </aside>
       )}
     </>
