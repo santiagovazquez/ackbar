@@ -128,7 +128,7 @@ export function ClaimControl({ listing }: { listing: Listing }) {
           <thead>
             {listing.listingType === "singles" ? (
               <tr>
-                <th>Cantidad</th>
+                <th aria-label="Cantidad" />
                 <th>Carta</th>
                 <th>Detalle</th>
                 <th>Precio unitario</th>

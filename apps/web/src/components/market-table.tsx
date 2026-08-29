@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { Currency, Listing } from "@swu/shared";
+import { formatDuration } from "../lib/format-duration";
 
 const money = (cents: number | null, currency: Currency) =>
   cents == null
@@ -18,14 +19,6 @@ const normalize = (value: string) =>
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "")
     .toLocaleLowerCase("es");
-
-const publicationDate = (value: string) =>
-  new Intl.DateTimeFormat("es-AR", {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-    timeZone: "America/Argentina/Buenos_Aires",
-  }).format(new Date(value));
 
 export function MarketTable({ listings }: { listings: Listing[] }) {
   const router = useRouter();
@@ -74,7 +67,7 @@ export function MarketTable({ listings }: { listings: Listing[] }) {
             <thead>
               <tr>
                 <th aria-label="Imagen">Foto</th>
-                <th>Cantidad</th>
+                <th aria-label="Cantidad" />
                 <th>Artículo</th>
                 <th>Detalle</th>
                 <th>Precio unitario</th>
@@ -103,7 +96,7 @@ export function MarketTable({ listings }: { listings: Listing[] }) {
                         <strong>{listing.seller.name}</strong>
                         <span aria-hidden="true">·</span>
                         <time dateTime={listing.createdAt}>
-                          Publicado el {publicationDate(listing.createdAt)}
+                          {formatDuration(listing.createdAt)}
                         </time>
                       </span>
                       {listing.description && (

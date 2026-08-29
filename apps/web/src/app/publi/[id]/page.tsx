@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { getListing } from "../../../lib/api";
 import { ClaimControl } from "../../../components/claim-control";
+import { formatDuration } from "../../../lib/format-duration";
 import { ImageCarousel } from "../../../components/image-carousel";
 import type { Currency } from "@swu/shared";
 const money = (cents: number | null, currency: Currency) =>
@@ -59,17 +60,4 @@ export default async function PublicationPage({ params }: { params: Promise<{ id
       </article>
     </main>
   );
-}
-
-function formatDuration(date: string) {
-  const elapsed = Math.max(0, Math.floor((Date.now() - new Date(date).getTime()) / 1000));
-  if (elapsed < 60) return "hace unos segundos";
-  const units = [
-    { seconds: 86400, name: "día" },
-    { seconds: 3600, name: "hora" },
-    { seconds: 60, name: "minuto" },
-  ];
-  const unit = units.find(({ seconds }) => elapsed >= seconds)!;
-  const value = Math.floor(elapsed / unit.seconds);
-  return `hace ${value} ${unit.name}${value === 1 ? "" : "s"}`;
 }
