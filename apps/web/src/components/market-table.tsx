@@ -19,6 +19,14 @@ const normalize = (value: string) =>
     .replace(/[\u0300-\u036f]/g, "")
     .toLocaleLowerCase("es");
 
+const publicationDate = (value: string) =>
+  new Intl.DateTimeFormat("es-AR", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+    timeZone: "America/Argentina/Buenos_Aires",
+  }).format(new Date(value));
+
 export function MarketTable({ listings }: { listings: Listing[] }) {
   const router = useRouter();
   const [query, setQuery] = useState("");
@@ -88,6 +96,27 @@ export function MarketTable({ listings }: { listings: Listing[] }) {
                   }
                 }}
               >
+                <tr className="market-publication-intro">
+                  <td colSpan={6}>
+                    <div className="market-publication-summary">
+                      <span className="market-publication-meta">
+                        <strong>{listing.seller.name}</strong>
+                        <span aria-hidden="true">·</span>
+                        <time dateTime={listing.createdAt}>
+                          Publicado el {publicationDate(listing.createdAt)}
+                        </time>
+                      </span>
+                      {listing.description && (
+                        <span
+                          className="market-publication-description"
+                          title={listing.description}
+                        >
+                          {listing.description}
+                        </span>
+                      )}
+                    </div>
+                  </td>
+                </tr>
                 {listing.items.map((item, index) => {
                   const isOther = listing.listingType === "bulk";
                   return (
