@@ -11,6 +11,20 @@ const claimSchema = z.object({
   pricingMode: z.enum(["unit", "playset"]),
 });
 
+claimsRouter.get("/listing/:listingId", async (req, res) => {
+  const result = await db.execute({
+    sql: `SELECT c.item_id itemId,
+                 SUM(c.quantity) quantity,
+                 SUM(c.amount_cents) amountCents
+          FROM claims c
+          JOIN listing_items i ON i.id=c.item_id
+          WHERE i.listing_id=? AND c.user_id=? AND c.status != 'cancelled'
+          GROUP BY c.item_id`,
+    args: [String(req.params.listingId), req.user!.id],
+  });
+  res.json(result.rows);
+});
+
 claimsRouter.post("/batch", async (req, res) => {
   const parsed = z.object({ claims: z.array(claimSchema).min(1).max(100) }).safeParse(req.body);
   if (!parsed.success) return res.status(400).json({ error: "Invalid claims" });

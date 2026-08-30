@@ -1,11 +1,12 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import type { Listing, ListingItem } from "@swu/shared";
 import { api } from "../lib/api";
 import { useAuth } from "./auth-provider";
 
 type Selection = Record<string, number>;
+type ClaimedItem = { itemId: string; quantity: number; amountCents: number };
 const money = (cents: number | null, currency: Listing["currency"]) =>
   cents == null
     ? "—"
@@ -21,13 +22,29 @@ function totalFor(item: ListingItem, quantity: number) {
 
 export function ClaimControl({ listing }: { listing: Listing }) {
   const { token } = useAuth();
+  const [items, setItems] = useState(listing.items);
   const [selection, setSelection] = useState<Selection>({});
+  const [claimed, setClaimed] = useState<Record<string, ClaimedItem>>({});
   const [message, setMessage] = useState("");
   const [busy, setBusy] = useState(false);
   const selectedItems = useMemo(
-    () => listing.items.filter((item) => (selection[item.id] ?? 0) > 0),
-    [listing.items, selection],
+    () => items.filter((item) => (selection[item.id] ?? 0) > 0),
+    [items, selection],
   );
+  const loadClaimed = useCallback(async () => {
+    if (!token) {
+      setClaimed({});
+      return;
+    }
+    const rows = await api<ClaimedItem[]>(`/claims/listing/${listing.id}`, {
+      headers: { Authorization: `Bearer ${token}` },
+      cache: "no-store",
+    });
+    setClaimed(Object.fromEntries(rows.map((row) => [row.itemId, row])));
+  }, [listing.id, token]);
+  useEffect(() => {
+    void loadClaimed().catch(() => setMessage("No pudimos cargar tus claims anteriores."));
+  }, [loadClaimed]);
   const total = selectedItems.reduce(
     (sum, item) => sum + totalFor(item, selection[item.id] ?? 0),
     0,
@@ -73,8 +90,29 @@ export function ClaimControl({ listing }: { listing: Listing }) {
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
         body: JSON.stringify({ claims }),
       });
-      setMessage("Claims confirmados. Los artículos quedaron reservados.");
-      setTimeout(() => location.reload(), 700);
+      const confirmed = { ...selection };
+      setItems((current) =>
+        current.map((item) => ({
+          ...item,
+          availableQuantity: item.availableQuantity - (confirmed[item.id] ?? 0),
+        })),
+      );
+      setClaimed((current) => {
+        const next = { ...current };
+        selectedItems.forEach((item) => {
+          const previous = current[item.id];
+          const quantity = confirmed[item.id] ?? 0;
+          next[item.id] = {
+            itemId: item.id,
+            quantity: (previous?.quantity ?? 0) + quantity,
+            amountCents: (previous?.amountCents ?? 0) + totalFor(item, quantity),
+          };
+        });
+        return next;
+      });
+      setSelection({});
+      setMessage("¡Listo! Tus artículos quedaron claimeados y reservados.");
+      setBusy(false);
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "No se pudieron confirmar los claims.");
       setBusy(false);
@@ -144,7 +182,7 @@ export function ClaimControl({ listing }: { listing: Listing }) {
             )}
           </thead>
           <tbody>
-            {listing.items.map((item) =>
+            {items.map((item) =>
               listing.listingType === "singles" ? (
                 <tr
                   key={item.id}
@@ -160,6 +198,11 @@ export function ClaimControl({ listing }: { listing: Listing }) {
                   <td>
                     <span className="card-name">{item.name}</span>
                     {item.subtitle && <small className="card-subtitle">{item.subtitle}</small>}
+                    {claimed[item.id] && (
+                      <small className="claimed-item-mark">
+                        ✓ Claimeaste {claimed[item.id]!.quantity}
+                      </small>
+                    )}
                   </td>
                   <td>{item.detail ?? "—"}</td>
                   <td>{money(item.unitPriceCents, listing.currency)}</td>
@@ -177,7 +220,14 @@ export function ClaimControl({ listing }: { listing: Listing }) {
                         : ""
                   }
                 >
-                  <td>{item.detail ?? item.name}</td>
+                  <td>
+                    {item.detail ?? item.name}
+                    {claimed[item.id] && (
+                      <small className="claimed-item-mark">
+                        ✓ Claimeaste {claimed[item.id]!.quantity}
+                      </small>
+                    )}
+                  </td>
                   <td>{money(item.unitPriceCents, listing.currency)}</td>
                   <td>{actions(item)}</td>
                 </tr>
@@ -210,6 +260,28 @@ export function ClaimControl({ listing }: { listing: Listing }) {
           </div>
           {message && <small role="status">{message}</small>}
         </aside>
+      )}
+      {Object.keys(claimed).length > 0 && (
+        <aside className="claimed-summary" aria-label="Tus claims en esta publicación">
+          <strong>Tus claims en esta publicación</strong>
+          <ul>
+            {items
+              .filter((item) => claimed[item.id])
+              .map((item) => (
+                <li key={item.id}>
+                  <span>
+                    {claimed[item.id]!.quantity}× {item.detail ?? item.name}
+                  </span>
+                  <strong>{money(claimed[item.id]!.amountCents, listing.currency)}</strong>
+                </li>
+              ))}
+          </ul>
+        </aside>
+      )}
+      {message && selectedItems.length === 0 && (
+        <p className="claim-message" role="status">
+          {message}
+        </p>
       )}
     </>
   );

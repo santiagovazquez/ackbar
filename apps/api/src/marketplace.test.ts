@@ -125,6 +125,18 @@ describe("marketplace lifecycle", () => {
     expect(claim.status).toBe(201);
     expect(claim.body.amountCents).toBe(2500);
 
+    const ownClaims = await request
+      .get(`/claims/listing/${listing.id}`)
+      .set(authenticated("buyer-token"));
+    expect(ownClaims.status).toBe(200);
+    expect(ownClaims.body).toEqual([
+      { itemId: listing.items[0].id, quantity: 3, amountCents: 2500 },
+    ]);
+    const sellerClaims = await request
+      .get(`/claims/listing/${listing.id}`)
+      .set(authenticated("seller-token"));
+    expect(sellerClaims.body).toEqual([]);
+
     const closed = await request.get(`/listings/${listing.id}`);
     expect(closed.status, JSON.stringify(closed.body)).toBe(200);
     expect(closed.body.status).toBe("closed");
