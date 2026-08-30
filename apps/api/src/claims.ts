@@ -186,7 +186,7 @@ claimsRouter.patch("/batch/delivered", async (req, res) => {
           claim.status === "claimed" &&
           claim.listing_id === first.listing_id &&
           claim.user_id === first.user_id &&
-          claim.owner_id === req.user!.id,
+          (claim.owner_id === req.user!.id || claim.user_id === req.user!.id),
       );
     if (!isOneDelivery) {
       await transaction.rollback();

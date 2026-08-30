@@ -205,7 +205,7 @@ describe("marketplace lifecycle", () => {
     expect(response.status).toBe(400);
   });
 
-  it("delivers claims from one publication and buyer as a single operation", async () => {
+  it("lets the buyer complete a delivery and both parties rate each other", async () => {
     const listing = await createPublication("sale", "seller-token");
     const first = await request
       .post("/claims")
@@ -224,15 +224,24 @@ describe("marketplace lifecycle", () => {
           .set(authenticated("buyer-token"))
           .send({ claimIds })
       ).status,
-    ).toBe(403);
+    ).toBe(204);
+
     expect(
       (
         await request
-          .patch("/claims/batch/delivered")
-          .set(authenticated("seller-token"))
-          .send({ claimIds })
+          .post("/users/ratings")
+          .set(authenticated("buyer-token"))
+          .send({ claimId: claimIds[0], value: "positive" })
       ).status,
-    ).toBe(204);
+    ).toBe(201);
+    expect(
+      (
+        await request
+          .post("/users/ratings")
+          .set(authenticated("seller-token"))
+          .send({ claimId: claimIds[0], value: "neutral" })
+      ).status,
+    ).toBe(201);
 
     const dashboard = await request.get("/users/me/dashboard").set(authenticated("seller-token"));
     expect(
@@ -240,6 +249,11 @@ describe("marketplace lifecycle", () => {
         .filter((claim: { id: string }) => claimIds.includes(claim.id))
         .map((claim: { status: string }) => claim.status),
     ).toEqual(["delivered", "delivered"]);
+
+    const sellerProfile = await request.get("/users/usr_seller");
+    const buyerProfile = await request.get("/users/usr_buyer");
+    expect(Number(sellerProfile.body.seller_positive)).toBeGreaterThanOrEqual(1);
+    expect(Number(buyerProfile.body.buyer_neutral)).toBe(1);
   });
 
   it("deactivates a publication while preserving its claims and rejecting new ones", async () => {
