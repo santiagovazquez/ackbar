@@ -158,3 +158,48 @@ claimsRouter.patch("/:id/status", async (req, res) => {
     res.status(403).json({ error: "Status change is not allowed" });
   }
 });
+
+claimsRouter.patch("/batch/delivered", async (req, res) => {
+  const body = z
+    .object({ claimIds: z.array(z.string().min(1)).min(1).max(100) })
+    .refine(({ claimIds }) => new Set(claimIds).size === claimIds.length)
+    .safeParse(req.body);
+  if (!body.success) return res.status(400).json({ error: "Invalid claims" });
+
+  const placeholders = body.data.claimIds.map(() => "?").join(",");
+  const transaction = await db.transaction("write");
+  try {
+    const claims = await transaction.execute({
+      sql: `SELECT c.id,c.user_id,l.id listing_id,l.owner_id,c.status
+            FROM claims c
+            JOIN listing_items i ON i.id=c.item_id
+            JOIN listings l ON l.id=i.listing_id
+            WHERE c.id IN (${placeholders})`,
+      args: body.data.claimIds,
+    });
+    const first = claims.rows[0];
+    const isOneDelivery =
+      claims.rows.length === body.data.claimIds.length &&
+      first &&
+      claims.rows.every(
+        (claim) =>
+          claim.status === "claimed" &&
+          claim.listing_id === first.listing_id &&
+          claim.user_id === first.user_id &&
+          claim.owner_id === req.user!.id,
+      );
+    if (!isOneDelivery) {
+      await transaction.rollback();
+      return res.status(403).json({ error: "Delivery is not allowed" });
+    }
+    await transaction.execute({
+      sql: `UPDATE claims SET status='delivered' WHERE id IN (${placeholders})`,
+      args: body.data.claimIds,
+    });
+    await transaction.commit();
+    res.status(204).end();
+  } catch {
+    if (!transaction.closed) await transaction.rollback();
+    res.status(409).json({ error: "Claims could not be delivered together" });
+  }
+});

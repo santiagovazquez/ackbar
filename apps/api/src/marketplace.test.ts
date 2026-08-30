@@ -56,6 +56,23 @@ async function createPublication(kind: "sale", ownerToken: string) {
 }
 
 describe("marketplace lifecycle", () => {
+  it("allows switching among database users only through local auth", async () => {
+    await request.get("/users/me/dashboard").set(authenticated("seller-token"));
+    await request.get("/users/me/dashboard").set(authenticated("buyer-token"));
+
+    const users = await request.get("/users/local-auth");
+    expect(users.status).toBe(200);
+    const buyer = users.body.find((user: { email: string }) => user.email === "buyer@example.com");
+    expect(buyer.token).toBe("local-user:usr_buyer");
+
+    const dashboard = await request.get("/users/me/dashboard").set(authenticated(buyer.token));
+    expect(dashboard.status).toBe(200);
+    expect(dashboard.body.user).toMatchObject({ id: "usr_buyer", name: "Buyer" });
+    expect(
+      (await request.get("/users/me/dashboard").set(authenticated("local-user:missing"))).status,
+    ).toBe(401);
+  });
+
   it("rejects anonymous publications and claims", async () => {
     expect((await request.post("/listings").send({})).status).toBe(401);
     expect(
@@ -186,6 +203,43 @@ describe("marketplace lifecycle", () => {
       .set(authenticated("buyer-token"))
       .send({ kind: "wanted", items: [] });
     expect(response.status).toBe(400);
+  });
+
+  it("delivers claims from one publication and buyer as a single operation", async () => {
+    const listing = await createPublication("sale", "seller-token");
+    const first = await request
+      .post("/claims")
+      .set(authenticated("buyer-token"))
+      .send({ itemId: listing.items[0].id, quantity: 1, pricingMode: "unit" });
+    const second = await request
+      .post("/claims")
+      .set(authenticated("buyer-token"))
+      .send({ itemId: listing.items[0].id, quantity: 1, pricingMode: "unit" });
+
+    const claimIds = [first.body.id, second.body.id];
+    expect(
+      (
+        await request
+          .patch("/claims/batch/delivered")
+          .set(authenticated("buyer-token"))
+          .send({ claimIds })
+      ).status,
+    ).toBe(403);
+    expect(
+      (
+        await request
+          .patch("/claims/batch/delivered")
+          .set(authenticated("seller-token"))
+          .send({ claimIds })
+      ).status,
+    ).toBe(204);
+
+    const dashboard = await request.get("/users/me/dashboard").set(authenticated("seller-token"));
+    expect(
+      dashboard.body.sales
+        .filter((claim: { id: string }) => claimIds.includes(claim.id))
+        .map((claim: { status: string }) => claim.status),
+    ).toEqual(["delivered", "delivered"]);
   });
 
   it("deactivates a publication while preserving its claims and rejecting new ones", async () => {

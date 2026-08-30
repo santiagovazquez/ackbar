@@ -48,6 +48,82 @@ nav {
 nav a:hover {
   color: var(--accent);
 }
+.local-login {
+  position: relative;
+}
+.local-login summary {
+  list-style: none;
+  cursor: pointer;
+  padding: 9px 13px;
+  border-radius: 4px;
+  background: #fff;
+  color: var(--ink);
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+.local-login summary::-webkit-details-marker {
+  display: none;
+}
+.local-login-popover {
+  position: absolute;
+  z-index: 20;
+  top: calc(100% + 10px);
+  right: 0;
+  width: min(330px, calc(100vw - 40px));
+  padding: 18px;
+  border: 1px solid #e2e4e8;
+  border-radius: 12px;
+  background: #fff;
+  color: var(--ink);
+  box-shadow: 0 14px 35px #0003;
+}
+.local-login-popover > strong {
+  display: block;
+  margin-bottom: 14px;
+}
+.local-login-divider {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 16px 0 10px;
+  color: var(--muted);
+  font-size: 0.75rem;
+}
+.local-login-divider::before,
+.local-login-divider::after {
+  content: "";
+  height: 1px;
+  flex: 1;
+  background: #e2e4e8;
+}
+.local-login-divider span {
+  white-space: nowrap;
+}
+.local-login-users {
+  display: grid;
+  gap: 7px;
+  max-height: 260px;
+  overflow-y: auto;
+}
+.local-login-users button {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  width: 100%;
+  padding: 9px 11px;
+  border: 1px solid #e2e4e8;
+  background: #f8f8f6;
+  text-align: left;
+}
+.local-login-users button:hover {
+  border-color: #c99a14;
+  background: #fffaf0;
+}
+.local-login-users small {
+  color: var(--muted);
+  font-weight: 400;
+}
 main {
   width: min(1120px, calc(100% - 40px));
   margin: 42px auto;

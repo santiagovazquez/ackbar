@@ -30,6 +30,11 @@ To import test publications into the local SQLite database, edit
 JSON file after `--`, for example `pnpm db:seed:listings -- ./seeds/my-listings.json`. The command is
 idempotent for listing IDs and refuses to run in production or against a non-`file:` database.
 
+When the API is running outside production against a local `file:` database, the header includes a
+local user selector populated from the `users` table. It can be used to switch between seller and
+buyer accounts and exercise both sides of a claim without Google sign-in. This development login is
+disabled automatically in production and for remote databases.
+
 The web client runs on port 4000 and the API on port 4001 by default. Both listen on all network
 interfaces in development; `LOCAL_IP` determines the URLs advertised to the browser and the API's
 allowed CORS origin. Without `.env.local`, development continues to use `localhost`.

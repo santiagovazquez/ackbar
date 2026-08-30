@@ -2,8 +2,25 @@ import { Router } from "express";
 import { z } from "zod";
 import { db } from "./db.js";
 import { requireAuth } from "./auth.js";
+import { localAuthToken } from "./auth.js";
+import { config } from "./config.js";
 
 export const usersRouter = Router();
+usersRouter.get("/local-auth", async (_req, res) => {
+  if (!config.localAuthEnabled) return res.status(404).json({ error: "Not found" });
+  const users = await db.execute(
+    `SELECT id,name,email,avatar_url FROM users ORDER BY name COLLATE NOCASE, email COLLATE NOCASE`,
+  );
+  res.json(
+    users.rows.map((user) => ({
+      id: String(user.id),
+      name: String(user.name),
+      email: String(user.email),
+      avatarUrl: user.avatar_url == null ? null : String(user.avatar_url),
+      token: localAuthToken(String(user.id)),
+    })),
+  );
+});
 usersRouter.get("/me/dashboard", requireAuth, async (req, res) => {
   await db.execute({
     sql: `UPDATE listings SET status='expired' WHERE owner_id=? AND status='active' AND expires_at<=?`,

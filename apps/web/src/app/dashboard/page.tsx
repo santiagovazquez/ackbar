@@ -59,12 +59,13 @@ const exchangeMoney = (cents: number, currency: Exchange["currency"]) =>
     currency,
   }).format(cents / 100);
 type CurrencyTotals = Partial<Record<Exchange["currency"], number>>;
-const pendingTotals = (rows: Exchange[]) =>
+const exchangeTotals = (rows: Exchange[]) =>
   rows.reduce<CurrencyTotals>((totals, row) => {
-    if (row.status === "claimed")
-      totals[row.currency] = (totals[row.currency] ?? 0) + row.amount_cents;
+    totals[row.currency] = (totals[row.currency] ?? 0) + row.amount_cents;
     return totals;
   }, {});
+const pendingTotals = (rows: Exchange[]) =>
+  exchangeTotals(rows.filter((row) => row.status === "claimed"));
 const totalsLabel = (totals: CurrencyTotals) =>
   (["ARS", "USD"] as const)
     .filter((currency) => totals[currency])
@@ -99,12 +100,12 @@ export default function Dashboard() {
   useEffect(() => {
     if (!isLoading && !token) router.replace("/");
   }, [isLoading, router, token]);
-  async function updateStatus(id: string, status: "delivered" | "received") {
+  async function deliverClaims(claimIds: string[]) {
     if (!token) return;
-    await api(`/claims/${id}/status`, {
+    await api("/claims/batch/delivered", {
       method: "PATCH",
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-      body: JSON.stringify({ status }),
+      body: JSON.stringify({ claimIds }),
     });
     await load();
   }
@@ -140,38 +141,110 @@ export default function Dashboard() {
         <p>Cargando…</p>
       </main>
     );
-  const exchanges = (rows: Exchange[], role: "buyer" | "seller") => (
+  const salesByDelivery = data.sales.reduce<
+    Array<{ key: string; buyerId: string; buyerName: string; claims: Exchange[] }>
+  >((groups, claim) => {
+    const key = `${claim.listing_id}:${claim.counterparty_id}`;
+    const group = groups.find((candidate) => candidate.key === key);
+    if (group) group.claims.push(claim);
+    else
+      groups.push({
+        key,
+        buyerId: claim.counterparty_id,
+        buyerName: claim.counterparty_name,
+        claims: [claim],
+      });
+    return groups;
+  }, []);
+  const sales = (
     <div className="stack">
-      {rows.length === 0 ? (
+      {salesByDelivery.length === 0 ? (
         <p className="muted">Todavía no hay operaciones.</p>
       ) : (
-        rows.map((row) => (
-          <article className="panel" key={row.id}>
-            <span className="status">{row.status}</span>
-            <h3>
-              {row.quantity}× {row.card_name}
-            </h3>
-            <p>
-              <a href={`/publi/${row.listing_id}`}>{row.card_name}</a> · {money(row.amount_cents)} ·
-              con <a href={`/perfil/${row.counterparty_id}`}>{row.counterparty_name}</a>
-            </p>
-            <div className="actions">
-              {role === "seller" && row.status === "claimed" && (
-                <button onClick={() => updateStatus(row.id, "delivered")}>Marcar entregada</button>
-              )}
-              {role === "buyer" && row.status === "delivered" && (
-                <button onClick={() => updateStatus(row.id, "received")}>Marcar recibida</button>
-              )}
-              {["delivered", "received"].includes(row.status) && !row.rated && (
-                <>
-                  <button onClick={() => rate(row.id, "positive")}>Positiva</button>
-                  <button onClick={() => rate(row.id, "neutral")}>Neutral</button>
-                  <button onClick={() => rate(row.id, "negative")}>Negativa</button>
-                </>
-              )}
-            </div>
-          </article>
-        ))
+        salesByDelivery.map((group) => {
+          const pendingClaims = group.claims.filter((claim) => claim.status === "claimed");
+          return (
+            <article className="panel" key={group.key}>
+              <span className="status">
+                {pendingClaims.length > 0 ? "claimed" : group.claims[0]!.status}
+              </span>
+              <h3>
+                Entrega a <a href={`/perfil/${group.buyerId}`}>{group.buyerName}</a>
+              </h3>
+              <p>
+                <a href={`/publi/${group.claims[0]!.listing_id}`}>
+                  {group.claims[0]!.description || "Ver publicación"}
+                </a>
+              </p>
+              <div className="market-table-wrap">
+                <table className="market-table">
+                  <thead>
+                    <tr>
+                      <th className="market-quantity-heading" aria-label="Cantidad" />
+                      <th>Artículo</th>
+                      <th className="market-price market-playset-price">Precio</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {group.claims.map((claim) => {
+                      const setCode = setCodeFor(claim);
+                      return (
+                        <tr key={claim.id}>
+                          <td className="market-quantity">{claim.quantity}</td>
+                          <td className="market-article">
+                            <a href={`/publi/${claim.listing_id}`}>
+                              {claim.listing_type === "bulk" ? (
+                                claim.detail || claim.card_name
+                              ) : (
+                                <>
+                                  <span className="card-name">
+                                    {claim.card_name}
+                                    {setCode && <small className="card-set">{setCode}</small>}
+                                  </span>
+                                  {claim.detail && (
+                                    <small className="card-detail">{claim.detail}</small>
+                                  )}
+                                </>
+                              )}
+                            </a>
+                          </td>
+                          <td className="market-price market-playset-price">
+                            {exchangeMoney(claim.amount_cents, claim.currency)}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                  <tfoot>
+                    <tr>
+                      <th colSpan={2}>Total</th>
+                      <td className="market-price market-playset-price">
+                        {totalsLabel(exchangeTotals(group.claims))}
+                      </td>
+                    </tr>
+                  </tfoot>
+                </table>
+              </div>
+              <div className="actions">
+                {pendingClaims.length > 0 && (
+                  <button onClick={() => deliverClaims(pendingClaims.map((claim) => claim.id))}>
+                    Marcar todo entregado
+                  </button>
+                )}
+              </div>
+              {group.claims
+                .filter((claim) => ["delivered", "received"].includes(claim.status) && !claim.rated)
+                .map((claim) => (
+                  <div className="actions" key={`${claim.id}:rating`}>
+                    <span>Calificar {claim.detail || claim.card_name}:</span>
+                    <button onClick={() => rate(claim.id, "positive")}>Positiva</button>
+                    <button onClick={() => rate(claim.id, "neutral")}>Neutral</button>
+                    <button onClick={() => rate(claim.id, "negative")}>Negativa</button>
+                  </div>
+                ))}
+            </article>
+          );
+        })
       )}
     </div>
   );
@@ -306,7 +379,7 @@ export default function Dashboard() {
         )}
       </div>
       <h2>Ventas</h2>
-      {exchanges(data.sales, "seller")}
+      {sales}
       <h2>Mis claims</h2>
       {claims}
     </main>
