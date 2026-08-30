@@ -197,6 +197,66 @@ describe("marketplace lifecycle", () => {
     expect(Number(profile.body.seller_positive)).toBe(1);
   });
 
+  it("hides claimed-out items from the home and closes a fully claimed publication", async () => {
+    const publication = await request
+      .post("/listings")
+      .set(authenticated("seller-token"))
+      .send({
+        kind: "sale",
+        description: "Two available cards",
+        imageUrls: ["https://example.com/two-cards.jpg"],
+        items: [
+          {
+            cardId: "item-one",
+            name: "Item One",
+            quantity: 1,
+            unitPriceCents: 1000,
+            playsetPriceCents: null,
+          },
+          {
+            cardId: "item-two",
+            name: "Item Two",
+            quantity: 1,
+            unitPriceCents: 2000,
+            playsetPriceCents: null,
+          },
+        ],
+      });
+    expect(publication.status).toBe(201);
+
+    await request
+      .post("/claims")
+      .set(authenticated("buyer-token"))
+      .send({ itemId: publication.body.items[0].id, quantity: 1, pricingMode: "unit" });
+
+    const partiallyAvailableHome = await request.get("/listings");
+    const partialListing = partiallyAvailableHome.body.find(
+      (listing: { id: string }) => listing.id === publication.body.id,
+    );
+    expect(partialListing.status).toBe("active");
+    expect(partialListing.items).toHaveLength(1);
+    expect(partialListing.items[0].id).toBe(publication.body.items[1].id);
+
+    await request
+      .post("/claims")
+      .set(authenticated("buyer-token"))
+      .send({ itemId: publication.body.items[1].id, quantity: 1, pricingMode: "unit" });
+
+    const soldOutHome = await request.get("/listings");
+    expect(
+      soldOutHome.body.some((listing: { id: string }) => listing.id === publication.body.id),
+    ).toBe(false);
+
+    const closedPublication = await request.get(`/listings/${publication.body.id}`);
+    expect(closedPublication.body.status).toBe("closed");
+    expect(closedPublication.body.items).toHaveLength(2);
+    expect(
+      closedPublication.body.items.every(
+        (item: { availableQuantity: number }) => item.availableQuantity === 0,
+      ),
+    ).toBe(true);
+  });
+
   it("rejects wanted publications", async () => {
     const response = await request
       .post("/listings")

@@ -67,7 +67,7 @@ const createSchema = z
       });
   });
 
-async function serializeListing(id: string) {
+async function serializeListing(id: string, availableItemsOnly = false) {
   await db.execute({
     sql: `UPDATE listings SET status='expired' WHERE id=? AND status='active' AND expires_at <= ?`,
     args: [id, new Date().toISOString()],
@@ -85,7 +85,8 @@ async function serializeListing(id: string) {
           LEFT JOIN cards card ON card.id=i.card_id
           LEFT JOIN claims c ON c.item_id=i.id
           WHERE i.listing_id=?
-          GROUP BY i.id`,
+          GROUP BY i.id
+          ${availableItemsOnly ? "HAVING available_quantity > 0" : ""}`,
     args: [id],
   });
   const images = await db.execute({
@@ -123,6 +124,20 @@ async function serializeListing(id: string) {
 }
 
 listingsRouter.get("/", async (req, res) => {
+  await db.execute({
+    sql: `UPDATE listings
+          SET status='closed'
+          WHERE kind='sale' AND status='active'
+            AND NOT EXISTS (
+              SELECT 1
+              FROM listing_items i
+              LEFT JOIN claims c ON c.item_id=i.id AND c.status != 'cancelled'
+              WHERE i.listing_id=listings.id
+              GROUP BY i.id
+              HAVING i.quantity > COALESCE(SUM(c.quantity),0)
+            )`,
+    args: [],
+  });
   const result = await db.execute({
     sql: `SELECT id FROM listings
           WHERE kind='sale' AND status='active' AND is_active=1 AND expires_at > ?
@@ -130,7 +145,9 @@ listingsRouter.get("/", async (req, res) => {
     args: [new Date().toISOString()],
   });
   res.json(
-    (await Promise.all(result.rows.map((row) => serializeListing(String(row.id))))).filter(Boolean),
+    (await Promise.all(result.rows.map((row) => serializeListing(String(row.id), true)))).filter(
+      Boolean,
+    ),
   );
 });
 listingsRouter.get("/cards/search", async (req, res) => {
