@@ -175,4 +175,40 @@ describe("marketplace lifecycle", () => {
       .send({ kind: "wanted", items: [] });
     expect(response.status).toBe(400);
   });
+
+  it("deactivates a publication while preserving its claims and rejecting new ones", async () => {
+    const listing = await createPublication("sale", "seller-token");
+    const firstClaim = await request
+      .post("/claims")
+      .set(authenticated("buyer-token"))
+      .send({ itemId: listing.items[0].id, quantity: 1, pricingMode: "unit" });
+    expect(firstClaim.status).toBe(201);
+
+    const deactivation = await request
+      .patch(`/listings/${listing.id}/deactivate`)
+      .set(authenticated("seller-token"));
+    expect(deactivation.status).toBe(204);
+
+    const detail = await request.get(`/listings/${listing.id}`);
+    expect(detail.status).toBe(200);
+    expect(detail.body.status).toBe("inactive");
+    expect(detail.body.items[0].availableQuantity).toBe(2);
+
+    const home = await request.get("/listings");
+    expect(home.body.some((row: { id: string }) => row.id === listing.id)).toBe(false);
+
+    const newClaim = await request
+      .post("/claims")
+      .set(authenticated("buyer-token"))
+      .send({ itemId: listing.items[0].id, quantity: 1, pricingMode: "unit" });
+    expect(newClaim.status).toBe(409);
+    expect(newClaim.body.error).toBe("Publication is not active");
+
+    const dashboard = await request.get("/users/me/dashboard").set(authenticated("seller-token"));
+    const dashboardListing = dashboard.body.listings.find(
+      (row: { id: string }) => row.id === listing.id,
+    );
+    expect(dashboardListing.status).toBe("inactive");
+    expect(Number(dashboardListing.claim_count)).toBe(1);
+  });
 });

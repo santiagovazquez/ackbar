@@ -125,6 +125,15 @@ main {
   text-transform: uppercase;
   white-space: nowrap;
 }
+.market-table tfoot th,
+.market-table tfoot td {
+  border-bottom: 0;
+  background: #f8f8f6;
+  font-weight: 800;
+}
+.market-table tfoot th {
+  text-align: right;
+}
 .market-listing-group {
   cursor: pointer;
   outline: 0;

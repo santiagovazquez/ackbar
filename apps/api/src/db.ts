@@ -30,6 +30,9 @@ export async function migrate() {
     !columnNames.has("description") && `ALTER TABLE listings ADD COLUMN description TEXT`,
     !columnNames.has("buyer_pays_shipping") &&
       `ALTER TABLE listings ADD COLUMN buyer_pays_shipping INTEGER NOT NULL DEFAULT 0`,
+    !columnNames.has("is_active") &&
+      `ALTER TABLE listings ADD COLUMN is_active INTEGER NOT NULL DEFAULT 1`,
+    !columnNames.has("deactivated_at") && `ALTER TABLE listings ADD COLUMN deactivated_at TEXT`,
   ].filter((sql): sql is string => Boolean(sql));
   if (additions.length) {
     await db.batch(
@@ -43,5 +46,8 @@ export async function migrate() {
   }
   await db.execute(
     `UPDATE listings SET description=title WHERE description IS NULL AND title IS NOT NULL AND title!=''`,
+  );
+  await db.execute(
+    `UPDATE listings SET is_active=0, deactivated_at=COALESCE(deactivated_at, deleted_at) WHERE status='deleted'`,
   );
 }

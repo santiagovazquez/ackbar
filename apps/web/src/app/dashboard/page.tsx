@@ -9,12 +9,17 @@ interface Exchange {
   quantity: number;
   amount_cents: number;
   status: string;
+  card_id: string;
   card_name: string;
+  card_set_code: string | null;
+  detail: string | null;
   listing_id: string;
+  listing_type: "singles" | "bulk";
   description: string | null;
   counterparty_id: string;
   counterparty_name: string;
   rated: number;
+  currency: "ARS" | "USD";
 }
 interface RatingBreakdown {
   positive: number;
@@ -48,6 +53,28 @@ const money = (cents: number) =>
     currency: "ARS",
     maximumFractionDigits: 0,
   }).format(cents / 100);
+const exchangeMoney = (cents: number, currency: Exchange["currency"]) =>
+  new Intl.NumberFormat("es-AR", {
+    style: "currency",
+    currency,
+  }).format(cents / 100);
+type CurrencyTotals = Partial<Record<Exchange["currency"], number>>;
+const pendingTotals = (rows: Exchange[]) =>
+  rows.reduce<CurrencyTotals>((totals, row) => {
+    if (row.status === "claimed")
+      totals[row.currency] = (totals[row.currency] ?? 0) + row.amount_cents;
+    return totals;
+  }, {});
+const totalsLabel = (totals: CurrencyTotals) =>
+  (["ARS", "USD"] as const)
+    .filter((currency) => totals[currency])
+    .map((currency) => exchangeMoney(totals[currency]!, currency))
+    .join(" + ") || exchangeMoney(0, "ARS");
+const setCodeFor = (claim: Exchange) => {
+  if (claim.card_set_code) return claim.card_set_code;
+  const match = claim.card_id.match(/^([A-Z0-9]+)_\d+$/i);
+  return match?.[1]?.toUpperCase() ?? null;
+};
 
 export default function Dashboard() {
   const { token, isLoading } = useAuth();
@@ -90,10 +117,10 @@ export default function Dashboard() {
     });
     await load();
   }
-  async function removeListing(id: string) {
-    if (!token || !confirm("¿Querés borrar esta publicación?")) return;
-    await api(`/listings/${id}`, {
-      method: "DELETE",
+  async function deactivateListing(id: string) {
+    if (!token || !confirm("¿Querés desactivar esta publicación?")) return;
+    await api(`/listings/${id}/deactivate`, {
+      method: "PATCH",
       headers: { Authorization: `Bearer ${token}` },
     });
     await load();
@@ -148,6 +175,83 @@ export default function Dashboard() {
       )}
     </div>
   );
+  const claimsBySeller = data.purchases.reduce<
+    Array<{ id: string; name: string; claims: Exchange[] }>
+  >((groups, claim) => {
+    const group = groups.find((candidate) => candidate.id === claim.counterparty_id);
+    if (group) group.claims.push(claim);
+    else groups.push({ id: claim.counterparty_id, name: claim.counterparty_name, claims: [claim] });
+    return groups;
+  }, []);
+  const claims = (
+    <div className="stack">
+      {claimsBySeller.length === 0 ? (
+        <p className="muted">Todavía no hiciste claims.</p>
+      ) : (
+        <>
+          <section className="panel">
+            <strong>Total pendiente: {totalsLabel(pendingTotals(data.purchases))}</strong>
+          </section>
+          {claimsBySeller.map((group) => (
+            <section className="panel" key={group.id}>
+              <h3>
+                <a href={`/perfil/${group.id}`}>{group.name}</a>
+              </h3>
+              <div className="market-table-wrap">
+                <table className="market-table">
+                  <thead>
+                    <tr>
+                      <th className="market-quantity-heading" aria-label="Cantidad" />
+                      <th>Artículo</th>
+                      <th className="market-price market-playset-price">Precio</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {group.claims.map((claim) => {
+                      const setCode = setCodeFor(claim);
+                      return (
+                        <tr key={claim.id}>
+                          <td className="market-quantity">{claim.quantity}</td>
+                          <td className="market-article">
+                            <a href={`/publi/${claim.listing_id}`}>
+                              {claim.listing_type === "bulk" ? (
+                                claim.detail || claim.card_name
+                              ) : (
+                                <>
+                                  <span className="card-name">
+                                    {claim.card_name}
+                                    {setCode && <small className="card-set">{setCode}</small>}
+                                  </span>
+                                  {claim.detail && (
+                                    <small className="card-detail">{claim.detail}</small>
+                                  )}
+                                </>
+                              )}
+                            </a>
+                          </td>
+                          <td className="market-price market-playset-price">
+                            {exchangeMoney(claim.amount_cents, claim.currency)}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                  <tfoot>
+                    <tr>
+                      <th colSpan={2}>Total pendiente a {group.name}</th>
+                      <td className="market-price market-playset-price">
+                        {totalsLabel(pendingTotals(group.claims))}
+                      </td>
+                    </tr>
+                  </tfoot>
+                </table>
+              </div>
+            </section>
+          ))}
+        </>
+      )}
+    </div>
+  );
   return (
     <main>
       <h1>Hola, {data.user.name}</h1>
@@ -175,7 +279,7 @@ export default function Dashboard() {
           <h2>Resumen</h2>
           <p>
             {data.listings.length} publicaciones · {data.sales.length} ventas ·{" "}
-            {data.purchases.length} compras
+            {data.purchases.length} claims
           </p>
         </section>
       </div>
@@ -194,15 +298,17 @@ export default function Dashboard() {
               <p>
                 {listing.claim_count} claims · {money(listing.total_cents)}
               </p>
-              <button onClick={() => removeListing(listing.id)}>Borrar</button>
+              {listing.status !== "inactive" && (
+                <button onClick={() => deactivateListing(listing.id)}>Desactivar</button>
+              )}
             </article>
           ))
         )}
       </div>
       <h2>Ventas</h2>
       {exchanges(data.sales, "seller")}
-      <h2>Compras</h2>
-      {exchanges(data.purchases, "buyer")}
+      <h2>Mis claims</h2>
+      {claims}
     </main>
   );
 }

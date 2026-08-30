@@ -1,7 +1,7 @@
 export type ListingKind = "sale";
 export type ListingType = "singles" | "bulk";
 export type Currency = "ARS" | "USD";
-export type ListingStatus = "active" | "closed" | "expired" | "deleted";
+export type ListingStatus = "active" | "closed" | "expired" | "inactive";
 export type RatingValue = "positive" | "neutral" | "negative";
 
 export interface CardInput {

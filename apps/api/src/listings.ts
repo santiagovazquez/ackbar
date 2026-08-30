@@ -73,7 +73,7 @@ async function serializeListing(id: string) {
     args: [id, new Date().toISOString()],
   });
   const listing = await db.execute({
-    sql: `SELECT l.*, u.name owner_name, u.avatar_url FROM listings l JOIN users u ON u.id=l.owner_id WHERE l.id=? AND l.status != 'deleted'`,
+    sql: `SELECT l.*, u.name owner_name, u.avatar_url FROM listings l JOIN users u ON u.id=l.owner_id WHERE l.id=?`,
     args: [id],
   });
   const row = listing.rows[0];
@@ -103,7 +103,7 @@ async function serializeListing(id: string) {
     description: row.description ? String(row.description) : null,
     imageUrl: imageUrls[0] ?? null,
     imageUrls,
-    status: row.status,
+    status: Number(row.is_active) ? row.status : "inactive",
     createdAt: row.created_at,
     expiresAt: row.expires_at,
     seller: { id: row.owner_id, name: row.owner_name, avatarUrl: row.avatar_url },
@@ -125,7 +125,7 @@ async function serializeListing(id: string) {
 listingsRouter.get("/", async (req, res) => {
   const result = await db.execute({
     sql: `SELECT id FROM listings
-          WHERE kind='sale' AND status='active' AND expires_at > ?
+          WHERE kind='sale' AND status='active' AND is_active=1 AND expires_at > ?
           ORDER BY created_at DESC, id DESC`,
     args: [new Date().toISOString()],
   });
@@ -221,9 +221,9 @@ listingsRouter.post("/", requireAuth, async (req, res) => {
   await db.batch(statements, "write");
   res.status(201).json(await serializeListing(id));
 });
-listingsRouter.delete("/:id", requireAuth, async (req, res) => {
+listingsRouter.patch("/:id/deactivate", requireAuth, async (req, res) => {
   const result = await db.execute({
-    sql: `UPDATE listings SET status='deleted', deleted_at=? WHERE id=? AND owner_id=? AND status!='deleted'`,
+    sql: `UPDATE listings SET is_active=0, deactivated_at=? WHERE id=? AND owner_id=? AND is_active=1`,
     args: [new Date().toISOString(), String(req.params.id), req.user!.id],
   });
   if (result.rowsAffected) {

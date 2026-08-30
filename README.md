@@ -17,7 +17,10 @@ Google sign-in is initiated entirely in the browser. Protected API routes indepe
 3. Copy `apps/web/.env.example` to `apps/web/.env.local` and configure the Google and S3 variables. Next.js does not load the repository-root `.env` because the web app runs from `apps/web`.
 4. Run `pnpm db:migrate`.
 5. Run `pnpm db:seed` to download and import the current SWU card catalog.
-6. Run `pnpm dev`.
+6. To access the app from other devices on your local network, copy `.env.local.example` to
+   `.env.local` and set `LOCAL_IP` to this computer's local IP address. On macOS with Wi-Fi you can
+   usually find it with `ipconfig getifaddr en0`.
+7. Run `pnpm dev` and open `http://<LOCAL_IP>:4000`.
 
 `db:seed` downloads the public bulk export from SWU API and upserts cards in batches. Set
 `SWU_CARD_CATALOG_URL` to use a compatible mirror or fixture instead.
@@ -27,7 +30,9 @@ To import test publications into the local SQLite database, edit
 JSON file after `--`, for example `pnpm db:seed:listings -- ./seeds/my-listings.json`. The command is
 idempotent for listing IDs and refuses to run in production or against a non-`file:` database.
 
-The web client runs on port 4000 and the API on port 4001 by default.
+The web client runs on port 4000 and the API on port 4001 by default. Both listen on all network
+interfaces in development; `LOCAL_IP` determines the URLs advertised to the browser and the API's
+allowed CORS origin. Without `.env.local`, development continues to use `localhost`.
 
 ## Code quality
 
@@ -43,6 +48,7 @@ Photo uploads use presigned S3 POSTs and go directly from the browser to the buc
 
 The API can use a persistent local SQLite file on a private server. Set `DATABASE_URL` to an absolute file URL such as `file:/var/lib/swu/marketplace.db`, or configure a remote libSQL database with `DATABASE_AUTH_TOKEN`.
 
-Publications expire seven days after creation. Soft deletion preserves claims and reputation history.
+Publications expire seven days after creation. Owners can deactivate them, which removes them from
+the marketplace and prevents new claims while preserving existing claims and reputation history.
 
 # swu-compraventa

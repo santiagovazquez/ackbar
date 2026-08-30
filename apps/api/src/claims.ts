@@ -20,11 +20,16 @@ claimsRouter.post("/batch", async (req, res) => {
   try {
     for (const { itemId, quantity, pricingMode } of parsed.data.claims) {
       const itemResult = await transaction.execute({
-        sql: `SELECT i.*, l.id listing_id, l.owner_id, l.status, l.expires_at, i.quantity - COALESCE(SUM(CASE WHEN c.status != 'cancelled' THEN c.quantity ELSE 0 END),0) available FROM listing_items i JOIN listings l ON l.id=i.listing_id LEFT JOIN claims c ON c.item_id=i.id WHERE i.id=? GROUP BY i.id`,
+        sql: `SELECT i.*, l.id listing_id, l.owner_id, l.status, l.is_active, l.expires_at, i.quantity - COALESCE(SUM(CASE WHEN c.status != 'cancelled' THEN c.quantity ELSE 0 END),0) available FROM listing_items i JOIN listings l ON l.id=i.listing_id LEFT JOIN claims c ON c.item_id=i.id WHERE i.id=? GROUP BY i.id`,
         args: [itemId],
       });
       const item = itemResult.rows[0];
-      if (!item || item.status !== "active" || String(item.expires_at) <= new Date().toISOString())
+      if (
+        !item ||
+        item.status !== "active" ||
+        Number(item.is_active) !== 1 ||
+        String(item.expires_at) <= new Date().toISOString()
+      )
         throw new Error("Publication is not active");
       if (item.owner_id === req.user!.id) throw new Error("You cannot claim your own publication");
       if (pricingMode === "playset" && quantity % 3 !== 0)
@@ -48,12 +53,10 @@ claimsRouter.post("/batch", async (req, res) => {
       });
     }
     await transaction.commit();
-    res
-      .status(201)
-      .json({
-        claims: created,
-        amountCents: created.reduce((sum, claim) => sum + claim.amountCents, 0),
-      });
+    res.status(201).json({
+      claims: created,
+      amountCents: created.reduce((sum, claim) => sum + claim.amountCents, 0),
+    });
   } catch (error) {
     if (!transaction.closed) await transaction.rollback();
     res
@@ -69,11 +72,16 @@ claimsRouter.post("/", async (req, res) => {
   const transaction = await db.transaction("write");
   try {
     const itemResult = await transaction.execute({
-      sql: `SELECT i.*, l.owner_id, l.status, l.expires_at, i.quantity - COALESCE(SUM(CASE WHEN c.status != 'cancelled' THEN c.quantity ELSE 0 END),0) available FROM listing_items i JOIN listings l ON l.id=i.listing_id LEFT JOIN claims c ON c.item_id=i.id WHERE i.id=? GROUP BY i.id`,
+      sql: `SELECT i.*, l.owner_id, l.status, l.is_active, l.expires_at, i.quantity - COALESCE(SUM(CASE WHEN c.status != 'cancelled' THEN c.quantity ELSE 0 END),0) available FROM listing_items i JOIN listings l ON l.id=i.listing_id LEFT JOIN claims c ON c.item_id=i.id WHERE i.id=? GROUP BY i.id`,
       args: [itemId],
     });
     const item = itemResult.rows[0];
-    if (!item || item.status !== "active" || String(item.expires_at) <= new Date().toISOString()) {
+    if (
+      !item ||
+      item.status !== "active" ||
+      Number(item.is_active) !== 1 ||
+      String(item.expires_at) <= new Date().toISOString()
+    ) {
       await transaction.rollback();
       return res.status(409).json({ error: "Publication is not active" });
     }
