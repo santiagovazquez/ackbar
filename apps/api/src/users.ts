@@ -80,7 +80,7 @@ usersRouter.post("/ratings", requireAuth, async (req, res) => {
     args: [body.data.claimId],
   });
   const row = claim.rows[0];
-  if (!row || !["delivered", "received"].includes(String(row.status)))
+  if (!row || row.status !== "received")
     return res.status(409).json({ error: "The exchange is not complete" });
   const isSeller = row.seller_id === req.user!.id;
   const toUserId = isSeller ? row.buyer_id : row.seller_id;

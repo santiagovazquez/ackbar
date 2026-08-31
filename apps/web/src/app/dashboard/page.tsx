@@ -160,6 +160,19 @@ export default function Dashboard() {
     });
     await load();
   }
+  async function receiveClaims(claimIds: string[]) {
+    if (!token) return;
+    await Promise.all(
+      claimIds.map((claimId) =>
+        api(`/claims/${claimId}/status`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+          body: JSON.stringify({ status: "received" }),
+        }),
+      ),
+    );
+    await load();
+  }
   async function rate(id: string, value: "positive" | "neutral" | "negative") {
     if (!token) return;
     await api("/users/ratings", {
@@ -215,7 +228,7 @@ export default function Dashboard() {
         salesByDelivery.map((group) => {
           const pendingClaims = group.claims.filter((claim) => claim.status === "claimed");
           const ratingClaim = group.claims.find(
-            (claim) => ["delivered", "received"].includes(claim.status) && !claim.rated,
+            (claim) => claim.status === "received" && !claim.rated,
           );
           const groupAlreadyRated = group.claims.some((claim) => Boolean(claim.rated));
           return (
@@ -329,8 +342,9 @@ export default function Dashboard() {
           </section>
           {claimsBySeller.map((group) => {
             const pendingClaims = group.claims.filter((claim) => claim.status === "claimed");
+            const deliveredClaims = group.claims.filter((claim) => claim.status === "delivered");
             const ratingClaim = group.claims.find(
-              (claim) => ["delivered", "received"].includes(claim.status) && !claim.rated,
+              (claim) => claim.status === "received" && !claim.rated,
             );
             const groupAlreadyRated = group.claims.some((claim) => Boolean(claim.rated));
             return (
@@ -388,9 +402,9 @@ export default function Dashboard() {
                   </table>
                 </div>
                 <div className="actions">
-                  {pendingClaims.length > 0 && (
-                    <button onClick={() => deliverClaims(pendingClaims.map((claim) => claim.id))}>
-                      Marcar todo entregado
+                  {deliveredClaims.length > 0 && (
+                    <button onClick={() => receiveClaims(deliveredClaims.map((claim) => claim.id))}>
+                      Marcar como recibido
                     </button>
                   )}
                 </div>

@@ -265,7 +265,7 @@ describe("marketplace lifecycle", () => {
     expect(response.status).toBe(400);
   });
 
-  it("lets the buyer complete a delivery and both parties rate each other", async () => {
+  it("requires delivery and receipt before both parties can rate each other", async () => {
     const listing = await createPublication("sale", "seller-token");
     const first = await request
       .post("/claims")
@@ -284,7 +284,35 @@ describe("marketplace lifecycle", () => {
           .set(authenticated("buyer-token"))
           .send({ claimIds })
       ).status,
+    ).toBe(403);
+    expect(
+      (
+        await request
+          .patch("/claims/batch/delivered")
+          .set(authenticated("seller-token"))
+          .send({ claimIds })
+      ).status,
     ).toBe(204);
+
+    expect(
+      (
+        await request
+          .post("/users/ratings")
+          .set(authenticated("buyer-token"))
+          .send({ claimId: claimIds[0], value: "positive" })
+      ).status,
+    ).toBe(409);
+
+    for (const claimId of claimIds) {
+      expect(
+        (
+          await request
+            .patch(`/claims/${claimId}/status`)
+            .set(authenticated("buyer-token"))
+            .send({ status: "received" })
+        ).status,
+      ).toBe(204);
+    }
 
     expect(
       (
@@ -308,7 +336,7 @@ describe("marketplace lifecycle", () => {
       dashboard.body.sales
         .filter((claim: { id: string }) => claimIds.includes(claim.id))
         .map((claim: { status: string }) => claim.status),
-    ).toEqual(["delivered", "delivered"]);
+    ).toEqual(["received", "received"]);
 
     const sellerProfile = await request.get("/users/usr_seller");
     const buyerProfile = await request.get("/users/usr_buyer");
