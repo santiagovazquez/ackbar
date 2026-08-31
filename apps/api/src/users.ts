@@ -21,6 +21,9 @@ usersRouter.get("/local-auth", async (_req, res) => {
     })),
   );
 });
+usersRouter.get("/me", requireAuth, (req, res) => {
+  res.json({ user: req.user });
+});
 usersRouter.get("/me/dashboard", requireAuth, async (req, res) => {
   await db.execute({
     sql: `UPDATE listings SET status='expired' WHERE owner_id=? AND status='active' AND expires_at<=?`,

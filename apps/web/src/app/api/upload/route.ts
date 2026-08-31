@@ -1,9 +1,7 @@
 import { S3Client } from "@aws-sdk/client-s3";
 import { createPresignedPost } from "@aws-sdk/s3-presigned-post";
-import { OAuth2Client } from "google-auth-library";
 import { NextResponse } from "next/server";
 
-const google = new OAuth2Client(process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID);
 const allowedContentTypes = new Set(["image/jpeg", "image/png", "image/webp"]);
 const maximumSizeInBytes = 20 * 1024 * 1024;
 
@@ -15,12 +13,15 @@ function requiredEnvironmentVariable(name: string) {
 
 export async function POST(request: Request) {
   const token = request.headers.get("authorization")?.replace(/^Bearer /, "");
-  const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
-  if (!token || !clientId)
-    return NextResponse.json({ error: "Authentication required" }, { status: 401 });
+  if (!token) return NextResponse.json({ error: "Authentication required" }, { status: 401 });
 
   try {
-    await google.verifyIdToken({ idToken: token, audience: clientId });
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4001";
+    const authentication = await fetch(`${apiUrl}/users/me`, {
+      headers: { Authorization: `Bearer ${token}` },
+      cache: "no-store",
+    });
+    if (!authentication.ok) throw new Error("Invalid identity token");
   } catch {
     return NextResponse.json(
       { error: "Your session expired. Sign in again to upload images." },

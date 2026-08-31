@@ -57,6 +57,10 @@ async function createPublication(kind: "sale", ownerToken: string) {
 
 describe("marketplace lifecycle", () => {
   it("allows switching among database users only through local auth", async () => {
+    const googleIdentity = await request.get("/users/me").set(authenticated("seller-token"));
+    expect(googleIdentity.status).toBe(200);
+    expect(googleIdentity.body.user.id).toBe("usr_seller");
+
     await request.get("/users/me/dashboard").set(authenticated("seller-token"));
     await request.get("/users/me/dashboard").set(authenticated("buyer-token"));
 
@@ -64,6 +68,10 @@ describe("marketplace lifecycle", () => {
     expect(users.status).toBe(200);
     const buyer = users.body.find((user: { email: string }) => user.email === "buyer@example.com");
     expect(buyer.token).toBe("local-user:usr_buyer");
+
+    const localIdentity = await request.get("/users/me").set(authenticated(buyer.token));
+    expect(localIdentity.status).toBe(200);
+    expect(localIdentity.body.user.id).toBe("usr_buyer");
 
     const dashboard = await request.get("/users/me/dashboard").set(authenticated(buyer.token));
     expect(dashboard.status).toBe(200);
