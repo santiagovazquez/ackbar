@@ -888,6 +888,73 @@ form {
   cursor: not-allowed;
   opacity: 0.5;
 }
+.dashboard-overview {
+  display: flex;
+  align-items: center;
+  gap: 32px;
+  padding: 20px 22px;
+}
+.dashboard-overview-user {
+  min-width: 0;
+  margin-right: auto;
+}
+.dashboard-overview h1 {
+  margin: 0 0 8px;
+  font-size: clamp(1.45rem, 3vw, 2rem);
+}
+.dashboard-overview-stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 18px;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+.dashboard-overview-stats strong {
+  color: var(--ink);
+  font-size: 1rem;
+}
+.dashboard-reputations {
+  display: flex;
+  gap: 30px;
+}
+.dashboard-reputation > span {
+  display: block;
+  margin-bottom: 7px;
+  color: var(--muted);
+  font-size: 0.76rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.dashboard-reputation-values {
+  display: flex;
+  gap: 13px;
+}
+.dashboard-reputation-values strong {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.9rem;
+}
+.dashboard-reputation-values i {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: currentColor;
+  box-shadow: 0 0 0 3px currentColor inset;
+}
+.dashboard-reputation-values .positive {
+  color: #16803c;
+}
+.dashboard-reputation-values .neutral {
+  color: #8a6510;
+}
+.dashboard-reputation-values .negative {
+  color: #c22f3e;
+}
+.dashboard-overview > .button {
+  flex: 0 0 auto;
+  white-space: nowrap;
+}
 .dashboard-listing {
   display: grid;
   grid-template-columns: 92px minmax(0, 1fr);
@@ -911,6 +978,26 @@ form {
 }
 .dashboard-listing-content h3 {
   margin-top: 8px;
+}
+@media (max-width: 780px) {
+  .dashboard-overview {
+    flex-wrap: wrap;
+    gap: 20px;
+  }
+  .dashboard-overview-user {
+    flex: 1 1 100%;
+  }
+  .dashboard-reputations {
+    flex: 1 1 auto;
+    flex-wrap: wrap;
+    gap: 18px 30px;
+  }
+}
+@media (max-width: 480px) {
+  .dashboard-overview > .button {
+    width: 100%;
+    text-align: center;
+  }
 }
 label {
   font-weight: 700;

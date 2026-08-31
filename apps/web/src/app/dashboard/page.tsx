@@ -59,6 +59,11 @@ const listingStatusLabel = (status: string) =>
     inactive: "desactivada",
     deleted: "eliminada",
   })[status] ?? "no disponible";
+const exchangeStatusLabel = (status: string) =>
+  ({
+    claimed: "claimeado",
+    delivered: "entregado",
+  })[status] ?? status;
 const money = (cents: number) =>
   new Intl.NumberFormat("es-AR", {
     style: "currency",
@@ -88,6 +93,38 @@ const setCodeFor = (claim: Exchange) => {
   const match = claim.card_id.match(/^([A-Z0-9]+)_\d+$/i);
   return match?.[1]?.toUpperCase() ?? null;
 };
+const ReputationSummary = ({
+  label,
+  positive,
+  neutral,
+  negative,
+}: {
+  label: string;
+  positive: number;
+  neutral: number;
+  negative: number;
+}) => (
+  <div className="dashboard-reputation">
+    <span>{label}</span>
+    <div
+      className="dashboard-reputation-values"
+      aria-label={`${label}: ${positive} positivas, ${neutral} neutrales y ${negative} negativas`}
+    >
+      <strong className="positive">
+        <i aria-hidden="true" />
+        {positive}
+      </strong>
+      <strong className="neutral">
+        <i aria-hidden="true" />
+        {neutral}
+      </strong>
+      <strong className="negative">
+        <i aria-hidden="true" />
+        {negative}
+      </strong>
+    </div>
+  </div>
+);
 
 export default function Dashboard() {
   const { token, isLoading } = useAuth();
@@ -184,7 +221,9 @@ export default function Dashboard() {
           return (
             <article className="panel" key={group.key}>
               <span className="status">
-                {pendingClaims.length > 0 ? "claimed" : group.claims[0]!.status}
+                {exchangeStatusLabel(
+                  pendingClaims.length > 0 ? "claimed" : group.claims[0]!.status,
+                )}
               </span>
               <h3>
                 Entrega a <a href={`/perfil/${group.buyerId}`}>{group.buyerName}</a>
@@ -373,10 +412,7 @@ export default function Dashboard() {
   const filteredListings = [...data.listings]
     .sort((left, right) => Date.parse(right.created_at) - Date.parse(left.created_at))
     .filter((listing) => listingsFilter === "all" || listing.status === "active");
-  const listingsPageCount = Math.max(
-    1,
-    Math.ceil(filteredListings.length / LISTINGS_PER_PAGE),
-  );
+  const listingsPageCount = Math.max(1, Math.ceil(filteredListings.length / LISTINGS_PER_PAGE));
   const currentListingsPage = Math.min(listingsPage, listingsPageCount);
   const paginatedListings = filteredListings.slice(
     (currentListingsPage - 1) * LISTINGS_PER_PAGE,
@@ -388,35 +424,36 @@ export default function Dashboard() {
   };
   return (
     <main>
-      <h1>Hola, {data.user.name}</h1>
-      <div className="actions">
+      <section className="panel dashboard-overview">
+        <div className="dashboard-overview-user">
+          <h1>Hola, {data.user.name}</h1>
+          <div className="dashboard-overview-stats" aria-label="Resumen de actividad">
+            <span>
+              <strong>{data.listings.length}</strong> publicaciones
+            </span>
+            <span>
+              <strong>{data.sales.length}</strong> ventas
+            </span>
+          </div>
+        </div>
+        <div className="dashboard-reputations">
+          <ReputationSummary
+            label="Como vendedor"
+            positive={data.ratings.seller_positive}
+            neutral={data.ratings.seller_neutral}
+            negative={data.ratings.seller_negative}
+          />
+          <ReputationSummary
+            label="Como comprador"
+            positive={data.ratings.buyer_positive}
+            neutral={data.ratings.buyer_neutral}
+            negative={data.ratings.buyer_negative}
+          />
+        </div>
         <a className="button" href="/vendo">
           Publicar venta
         </a>
-      </div>
-      <div className="grid">
-        <section className="panel">
-          <h2>Reputación como vendedor</h2>
-          <p>
-            🟢 {data.ratings.seller_positive} · ⚪ {data.ratings.seller_neutral} · 🔴{" "}
-            {data.ratings.seller_negative}
-          </p>
-        </section>
-        <section className="panel">
-          <h2>Reputación como comprador</h2>
-          <p>
-            🟢 {data.ratings.buyer_positive} · ⚪ {data.ratings.buyer_neutral} · 🔴{" "}
-            {data.ratings.buyer_negative}
-          </p>
-        </section>
-        <section className="panel">
-          <h2>Resumen</h2>
-          <p>
-            {data.listings.length} publicaciones · {data.sales.length} ventas ·{" "}
-            {data.purchases.length} claims
-          </p>
-        </section>
-      </div>
+      </section>
       <div className="section-heading">
         <h2>Mis publicaciones</h2>
         <div className="toggle-group" role="group" aria-label="Filtrar publicaciones">
@@ -456,7 +493,11 @@ export default function Dashboard() {
                   <img
                     className="dashboard-listing-image"
                     src={listing.image_url}
-                    alt={listing.card_names ? `Foto de ${listing.card_names}` : "Foto de la publicación"}
+                    alt={
+                      listing.card_names
+                        ? `Foto de ${listing.card_names}`
+                        : "Foto de la publicación"
+                    }
                   />
                 </a>
               )}
