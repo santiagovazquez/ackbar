@@ -5,6 +5,8 @@
   --card: #fff;
   --accent: #e7b21c;
   --dark: #171b23;
+  --content-width: 1120px;
+  --page-gutter: 20px;
 }
 * {
   box-sizing: border-box;
@@ -27,7 +29,7 @@ textarea {
 }
 .topbar {
   min-height: 68px;
-  padding: 12px max(20px, calc((100vw - 1120px) / 2));
+  padding: 12px max(var(--page-gutter), calc((100vw - var(--content-width)) / 2));
   background: var(--dark);
   color: #fff;
   display: flex;
@@ -125,11 +127,8 @@ nav a:hover {
   font-weight: 400;
 }
 main {
-  width: min(1120px, calc(100% - 40px));
+  width: min(var(--content-width), calc(100% - (2 * var(--page-gutter))));
   margin: 42px auto;
-}
-.home-market {
-  width: min(1540px, calc(100% - 40px));
 }
 .market-heading {
   display: flex;
