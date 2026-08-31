@@ -1,4 +1,38 @@
 import { apiUrl } from "../../../lib/api";
+
+const ReputationSummary = ({
+  label,
+  positive,
+  neutral,
+  negative,
+}: {
+  label: string;
+  positive: number;
+  neutral: number;
+  negative: number;
+}) => (
+  <div className="dashboard-reputation">
+    <span>{label}</span>
+    <div
+      className="dashboard-reputation-values"
+      aria-label={`${label}: ${positive} positivas, ${neutral} neutrales y ${negative} negativas`}
+    >
+      <strong className="positive">
+        <i aria-hidden="true" />
+        {positive}
+      </strong>
+      <strong className="neutral">
+        <i aria-hidden="true" />
+        {neutral}
+      </strong>
+      <strong className="negative">
+        <i aria-hidden="true" />
+        {negative}
+      </strong>
+    </div>
+  </div>
+);
+
 export default async function Profile({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const response = await fetch(`${apiUrl}/users/${id}`, { next: { revalidate: 60 } });
@@ -11,29 +45,33 @@ export default async function Profile({ params }: { params: Promise<{ id: string
   const user = await response.json();
   return (
     <main>
-      <h1>{user.name}</h1>
-      <div className="grid">
-        <section className="panel">
-          <h2>Actividad</h2>
-          <p>
-            {user.sales ?? 0} ventas · {user.purchases ?? 0} compras
-          </p>
-        </section>
-        <section className="panel">
-          <h2>Como vendedor</h2>
-          <p>
-            🟢 {user.seller_positive ?? 0} · ⚪ {user.seller_neutral ?? 0} · 🔴{" "}
-            {user.seller_negative ?? 0}
-          </p>
-        </section>
-        <section className="panel">
-          <h2>Como comprador</h2>
-          <p>
-            🟢 {user.buyer_positive ?? 0} · ⚪ {user.buyer_neutral ?? 0} · 🔴{" "}
-            {user.buyer_negative ?? 0}
-          </p>
-        </section>
-      </div>
+      <section className="panel dashboard-overview">
+        <div className="dashboard-overview-user">
+          <h1>{user.name}</h1>
+          <div className="dashboard-overview-stats" aria-label="Resumen de actividad">
+            <span>
+              <strong>{user.sales ?? 0}</strong> ventas
+            </span>
+            <span>
+              <strong>{user.purchases ?? 0}</strong> compras
+            </span>
+          </div>
+        </div>
+        <div className="dashboard-reputations">
+          <ReputationSummary
+            label="Como vendedor"
+            positive={user.seller_positive ?? 0}
+            neutral={user.seller_neutral ?? 0}
+            negative={user.seller_negative ?? 0}
+          />
+          <ReputationSummary
+            label="Como comprador"
+            positive={user.buyer_positive ?? 0}
+            neutral={user.buyer_neutral ?? 0}
+            negative={user.buyer_negative ?? 0}
+          />
+        </div>
+      </section>
       <h2>Publicaciones activas</h2>
       <div className="grid">
         {user.listings?.length ? (
