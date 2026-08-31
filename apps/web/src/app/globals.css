@@ -865,6 +865,53 @@ form {
   background: var(--accent);
   color: var(--ink);
 }
+.section-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin: 1.5rem 0 0.83rem;
+}
+.section-heading h2 {
+  margin: 0;
+}
+.pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+}
+.pagination span {
+  color: var(--muted);
+}
+.pagination button:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+.dashboard-listing {
+  display: grid;
+  grid-template-columns: 92px minmax(0, 1fr);
+  align-items: start;
+  gap: 16px;
+}
+.dashboard-listing-no-image {
+  grid-template-columns: minmax(0, 1fr);
+}
+.dashboard-listing-image-link {
+  display: block;
+}
+.panel .dashboard-listing-image {
+  width: 92px;
+  height: 92px;
+  border-radius: 8px;
+  object-fit: cover;
+}
+.dashboard-listing-content {
+  min-width: 0;
+}
+.dashboard-listing-content h3 {
+  margin-top: 8px;
+}
 label {
   font-weight: 700;
   display: grid;

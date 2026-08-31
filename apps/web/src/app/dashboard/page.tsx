@@ -39,7 +39,9 @@ interface DashboardData {
     kind: string;
     description: string | null;
     card_names: string | null;
+    image_url: string | null;
     status: string;
+    created_at: string;
     claim_count: number;
     total_cents: number;
   }>;
@@ -47,6 +49,16 @@ interface DashboardData {
   sales: Exchange[];
   ratings: RatingBreakdown;
 }
+type ListingsFilter = "active" | "all";
+const LISTINGS_PER_PAGE = 5;
+const listingStatusLabel = (status: string) =>
+  ({
+    active: "activa",
+    closed: "cerrada",
+    expired: "vencida",
+    inactive: "desactivada",
+    deleted: "eliminada",
+  })[status] ?? "no disponible";
 const money = (cents: number) =>
   new Intl.NumberFormat("es-AR", {
     style: "currency",
@@ -82,6 +94,8 @@ export default function Dashboard() {
   const router = useRouter();
   const [data, setData] = useState<DashboardData | null>(null);
   const [error, setError] = useState("");
+  const [listingsFilter, setListingsFilter] = useState<ListingsFilter>("active");
+  const [listingsPage, setListingsPage] = useState(1);
   const load = useCallback(async () => {
     if (!token) return;
     try {
@@ -356,6 +370,22 @@ export default function Dashboard() {
       )}
     </div>
   );
+  const filteredListings = [...data.listings]
+    .sort((left, right) => Date.parse(right.created_at) - Date.parse(left.created_at))
+    .filter((listing) => listingsFilter === "all" || listing.status === "active");
+  const listingsPageCount = Math.max(
+    1,
+    Math.ceil(filteredListings.length / LISTINGS_PER_PAGE),
+  );
+  const currentListingsPage = Math.min(listingsPage, listingsPageCount);
+  const paginatedListings = filteredListings.slice(
+    (currentListingsPage - 1) * LISTINGS_PER_PAGE,
+    currentListingsPage * LISTINGS_PER_PAGE,
+  );
+  const changeListingsFilter = (filter: ListingsFilter) => {
+    setListingsFilter(filter);
+    setListingsPage(1);
+  };
   return (
     <main>
       <h1>Hola, {data.user.name}</h1>
@@ -387,26 +417,85 @@ export default function Dashboard() {
           </p>
         </section>
       </div>
-      <h2>Mis publicaciones</h2>
+      <div className="section-heading">
+        <h2>Mis publicaciones</h2>
+        <div className="toggle-group" role="group" aria-label="Filtrar publicaciones">
+          <button
+            type="button"
+            className={listingsFilter === "active" ? "active" : undefined}
+            aria-pressed={listingsFilter === "active"}
+            onClick={() => changeListingsFilter("active")}
+          >
+            Activas
+          </button>
+          <button
+            type="button"
+            className={listingsFilter === "all" ? "active" : undefined}
+            aria-pressed={listingsFilter === "all"}
+            onClick={() => changeListingsFilter("all")}
+          >
+            Todas
+          </button>
+        </div>
+      </div>
       <div className="stack">
-        {data.listings.length === 0 ? (
-          <p className="muted">Todavía no publicaste.</p>
+        {paginatedListings.length === 0 ? (
+          <p className="muted">
+            {data.listings.length === 0
+              ? "Todavía no publicaste."
+              : "No tenés publicaciones activas."}
+          </p>
         ) : (
-          data.listings.map((listing) => (
-            <article className="panel" key={listing.id}>
-              <span className="status">{listing.status}</span>
-              <h3>
-                <a href={`/publi/${listing.id}`}>{listing.card_names ?? "Bulk"}</a>
-              </h3>
-              {listing.description && <p>{listing.description}</p>}
-              <p>
-                {listing.claim_count} claims · {money(listing.total_cents)}
-              </p>
-              {listing.status !== "inactive" && (
-                <button onClick={() => deactivateListing(listing.id)}>Desactivar</button>
+          paginatedListings.map((listing) => (
+            <article
+              className={`panel dashboard-listing${listing.image_url ? "" : " dashboard-listing-no-image"}`}
+              key={listing.id}
+            >
+              {listing.image_url && (
+                <a href={`/publi/${listing.id}`} className="dashboard-listing-image-link">
+                  <img
+                    className="dashboard-listing-image"
+                    src={listing.image_url}
+                    alt={listing.card_names ? `Foto de ${listing.card_names}` : "Foto de la publicación"}
+                  />
+                </a>
               )}
+              <div className="dashboard-listing-content">
+                <span className="status">{listingStatusLabel(listing.status)}</span>
+                <h3>
+                  <a href={`/publi/${listing.id}`}>{listing.card_names ?? "Bulk"}</a>
+                </h3>
+                {listing.description && <p>{listing.description}</p>}
+                <p>
+                  {listing.claim_count} claims · {money(listing.total_cents)}
+                </p>
+                {listing.status !== "inactive" && (
+                  <button onClick={() => deactivateListing(listing.id)}>Desactivar</button>
+                )}
+              </div>
             </article>
           ))
+        )}
+        {listingsPageCount > 1 && (
+          <nav className="pagination" aria-label="Páginas de publicaciones">
+            <button
+              type="button"
+              disabled={currentListingsPage === 1}
+              onClick={() => setListingsPage(currentListingsPage - 1)}
+            >
+              Anterior
+            </button>
+            <span>
+              Página {currentListingsPage} de {listingsPageCount}
+            </span>
+            <button
+              type="button"
+              disabled={currentListingsPage === listingsPageCount}
+              onClick={() => setListingsPage(currentListingsPage + 1)}
+            >
+              Siguiente
+            </button>
+          </nav>
         )}
       </div>
       <h2>Ventas</h2>

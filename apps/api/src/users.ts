@@ -27,7 +27,7 @@ usersRouter.get("/me/dashboard", requireAuth, async (req, res) => {
     args: [req.user!.id, new Date().toISOString()],
   });
   const listings = await db.execute({
-    sql: `SELECT l.id,l.kind,l.description,CASE WHEN l.is_active=0 THEN 'inactive' ELSE l.status END status,l.created_at,l.expires_at,GROUP_CONCAT(DISTINCT i.card_name) card_names,COUNT(DISTINCT c.id) claim_count,COALESCE(SUM(CASE WHEN c.status!='cancelled' THEN c.amount_cents ELSE 0 END),0) total_cents FROM listings l LEFT JOIN listing_items i ON i.listing_id=l.id LEFT JOIN claims c ON c.item_id=i.id WHERE l.owner_id=? GROUP BY l.id ORDER BY l.created_at DESC`,
+    sql: `SELECT l.id,l.kind,l.description,COALESCE((SELECT li.url FROM listing_images li WHERE li.listing_id=l.id ORDER BY li.position LIMIT 1),l.image_url) image_url,CASE WHEN l.is_active=0 THEN 'inactive' ELSE l.status END status,l.created_at,l.expires_at,GROUP_CONCAT(DISTINCT i.card_name) card_names,COUNT(DISTINCT c.id) claim_count,COALESCE(SUM(CASE WHEN c.status!='cancelled' THEN c.amount_cents ELSE 0 END),0) total_cents FROM listings l LEFT JOIN listing_items i ON i.listing_id=l.id LEFT JOIN claims c ON c.item_id=i.id WHERE l.owner_id=? GROUP BY l.id ORDER BY l.created_at DESC`,
     args: [req.user!.id],
   });
   const purchases = await db.execute({
