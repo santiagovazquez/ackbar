@@ -35,12 +35,14 @@ if [[ ! -d "$target_release" ]]; then
   exit 1
 fi
 
-# --- Load the same runtime used by deployment -------------------------------
+# --- Validate the server runtime --------------------------------------------
 
-export NVM_DIR="$HOME/.nvm"
-# shellcheck source=/dev/null
-. "$NVM_DIR/nvm.sh"
-nvm use 22
+for runtime_command in node pm2; do
+  if ! command -v "$runtime_command" >/dev/null; then
+    echo "$runtime_command is not installed on the server" >&2
+    exit 1
+  fi
+done
 
 # --- Automatic failure recovery ---------------------------------------------
 

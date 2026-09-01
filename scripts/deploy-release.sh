@@ -46,22 +46,13 @@ ln -sfn "$web_env" "$release/apps/web/.env.production"
 
 # --- Runtime and build -------------------------------------------------------
 
-# Select Node 22 for this shell and the processes launched from it. This does
-# not restart or change the Node version of unrelated PM2 applications.
-export NVM_DIR="$HOME/.nvm"
-if [[ ! -s "$NVM_DIR/nvm.sh" ]]; then
-  echo "nvm is not installed on the server" >&2
-  exit 1
-fi
-
-# Some NVM versions reference optional variables without guarding them, so
-# temporarily disable nounset while loading and running NVM.
-set +u
-# shellcheck source=/dev/null
-. "$NVM_DIR/nvm.sh"
-nvm install 22
-nvm use 22
-set -u
+# Use the Node.js runtime and PM2 installation provisioned on the server.
+for runtime_command in node corepack pm2; do
+  if ! command -v "$runtime_command" >/dev/null; then
+    echo "$runtime_command is not installed on the server" >&2
+    exit 1
+  fi
+done
 corepack enable
 corepack prepare pnpm@10.17.1 --activate
 cd "$release"
