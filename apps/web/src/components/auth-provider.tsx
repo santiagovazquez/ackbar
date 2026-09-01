@@ -5,7 +5,12 @@ import { createContext, useContext, useEffect, useRef, useState } from "react";
 import { api } from "../lib/api";
 import { Notifications } from "./notifications";
 
-type AuthUser = { name: string; username: string | null; whatsapp: string | null };
+type AuthUser = {
+  name: string;
+  avatarUrl: string | null;
+  username: string | null;
+  whatsapp: string | null;
+};
 type Auth = { token: string | null; isLoading: boolean; signOut: () => void };
 type LocalUser = { id: string; name: string; email: string; token: string };
 const AuthContext = createContext<Auth>({ token: null, isLoading: true, signOut: () => undefined });
@@ -31,6 +36,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [localUsers, setLocalUsers] = useState<LocalUser[] | null>(null);
   const [user, setUser] = useState<AuthUser | null>(null);
   const loginMenu = useRef<HTMLDetailsElement>(null);
+  const userMenu = useRef<HTMLDetailsElement>(null);
   useEffect(() => {
     const storedToken = sessionStorage.getItem("google_id_token");
     const expiration = storedToken ? tokenExpiration(storedToken) : null;
@@ -49,6 +55,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     sessionStorage.removeItem("google_id_token");
     setToken(null);
     setUser(null);
+    if (userMenu.current) userMenu.current.open = false;
   };
   const selectLocalUser = (value: string) => {
     save(value);
@@ -84,6 +91,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       .then((response) => setUser(response.user))
       .catch(signOut);
   }, [token]);
+  useEffect(() => {
+    const closeUserMenu = (event: MouseEvent) => {
+      if (userMenu.current?.open && !userMenu.current.contains(event.target as Node)) {
+        userMenu.current.open = false;
+      }
+    };
+    document.addEventListener("mousedown", closeUserMenu);
+    return () => document.removeEventListener("mousedown", closeUserMenu);
+  }, []);
   return (
     <GoogleOAuthProvider clientId={process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID ?? ""}>
       <AuthContext.Provider value={{ token, isLoading, signOut }}>
@@ -101,12 +117,28 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           <nav>
             {token && <a href="/vendo">Vendo</a>}
             {token && <a href="/busco">Busco</a>}
-            {token && <a href="/dashboard">Mi panel</a>}
             {token && <Notifications token={token} />}
             {isLoading ? null : token ? (
-              <button className="link" onClick={signOut}>
-                Salir
-              </button>
+              <details className="user-menu" ref={userMenu}>
+                <summary aria-label="Abrir menú de usuario" title={user?.name ?? "Mi cuenta"}>
+                  {user?.avatarUrl ? (
+                    <img src={user.avatarUrl} alt="" referrerPolicy="no-referrer" />
+                  ) : (
+                    <span aria-hidden="true">
+                      {user?.name.trim().charAt(0).toUpperCase() || "?"}
+                    </span>
+                  )}
+                </summary>
+                <div className="user-menu-popover">
+                  {user && <strong>{user.name}</strong>}
+                  <a href="/dashboard" onClick={() => userMenu.current?.removeAttribute("open")}>
+                    Mi panel
+                  </a>
+                  <button type="button" onClick={signOut}>
+                    Cerrar sesión
+                  </button>
+                </div>
+              </details>
             ) : localUsers === null ? null : localUsers.length > 0 ? (
               <details className="local-login" ref={loginMenu}>
                 <summary>Iniciar sesión</summary>
