@@ -67,6 +67,36 @@ async function createPublication(kind: "sale", ownerToken: string) {
 }
 
 describe("marketplace lifecycle", () => {
+  it("requires WhatsApp and a username with at least three letters", async () => {
+    for (const profile of [
+      { username: "ab1", whatsapp: "+5491111111111" },
+      { username: "abc_123", whatsapp: "+5491111111111" },
+      { username: "abc-123", whatsapp: "" },
+    ]) {
+      const response = await request
+        .put("/users/me/profile")
+        .set(authenticated("seller-token"))
+        .send(profile);
+      expect(response.status).toBe(400);
+    }
+
+    const valid = await request
+      .put("/users/me/profile")
+      .set(authenticated("seller-token"))
+      .send({ username: "abc-123", whatsapp: "+5491111111111" });
+    expect(valid.status).toBe(200);
+    expect(valid.body.user).toMatchObject({
+      username: "abc-123",
+      whatsapp: "+5491111111111",
+    });
+
+    const restored = await request
+      .put("/users/me/profile")
+      .set(authenticated("seller-token"))
+      .send({ username: "seller", whatsapp: "+5491111111111" });
+    expect(restored.status).toBe(200);
+  });
+
   it("allows switching among database users only through local auth", async () => {
     const googleIdentity = await request.get("/users/me").set(authenticated("seller-token"));
     expect(googleIdentity.status).toBe(200);

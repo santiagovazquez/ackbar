@@ -195,15 +195,15 @@ function Registration({
               value={username}
               onChange={(event) => setUsername(event.target.value.toLowerCase())}
               autoComplete="username"
-              pattern="[a-z0-9](?:[a-z0-9_-]*[a-z0-9])?"
+              pattern="(?=(?:.*[a-z]){3})[a-z0-9\-]+"
               minLength={3}
               maxLength={30}
-              placeholder="tu_nombre"
+              placeholder="tu-nombre"
               required
               autoFocus
             />
           </div>
-          <small>Entre 3 y 30 caracteres: letras minúsculas, números, guion o guion bajo.</small>
+          <small>Al menos 3 letras. También puede contener números y guiones (-).</small>
           <label htmlFor="registration-whatsapp">WhatsApp</label>
           <input
             id="registration-whatsapp"

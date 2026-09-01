@@ -29,9 +29,8 @@ const profileSchema = z.object({
     .string()
     .trim()
     .toLowerCase()
-    .min(3)
     .max(30)
-    .regex(/^[a-z0-9](?:[a-z0-9_-]*[a-z0-9])?$/),
+    .regex(/^(?=(?:[^a-z]*[a-z]){3})[a-z0-9-]+$/),
   whatsapp: z
     .string()
     .trim()
@@ -42,7 +41,7 @@ usersRouter.put("/me/profile", requireAuth, async (req, res) => {
   if (!body.success)
     return res.status(400).json({
       error:
-        "Usá un nombre de 3 a 30 caracteres y un WhatsApp internacional, por ejemplo +5491123456789",
+        "El nombre de usuario debe tener al menos 3 letras y sólo puede contener letras, números y -. Usá un WhatsApp internacional, por ejemplo +5491123456789",
     });
   try {
     await db.execute({
