@@ -1,10 +1,23 @@
 :root {
-  --ink: #15171a;
-  --muted: #667085;
-  --paper: #f4f1e8;
+  /* Core palette */
+  --tuatara: #2a2928;
+  --antique-brass: #cb8a75;
+  --pewter: #949c9c;
+  --manatee: #94949c;
+
+  /* Semantic theme tokens derived from the core palette */
+  --ink: var(--tuatara);
+  --muted: #64696b;
+  --paper: color-mix(in srgb, var(--pewter) 12%, white);
   --card: #fff;
-  --accent: #e7b21c;
-  --dark: #171b23;
+  --accent: var(--antique-brass);
+  --dark: var(--tuatara);
+  --border: color-mix(in srgb, var(--manatee) 34%, white);
+  --surface-muted: color-mix(in srgb, var(--pewter) 14%, white);
+  --surface-accent: color-mix(in srgb, var(--antique-brass) 16%, white);
+  --surface-cool: color-mix(in srgb, var(--manatee) 16%, white);
+  --focus-ring: #cb8a7540;
+  --shadow: #2a29281a;
   --content-width: 1120px;
   --page-gutter: 20px;
 }
@@ -29,18 +42,26 @@ textarea {
 }
 .topbar {
   min-height: 68px;
-  padding: 12px max(var(--page-gutter), calc((100vw - var(--content-width)) / 2));
+  padding: 0 max(var(--page-gutter), calc((100vw - var(--content-width)) / 2));
   background: var(--dark);
-  color: #fff;
+  color: var(--paper);
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 20px;
 }
 .brand {
-  font-weight: 900;
-  letter-spacing: 0.04em;
-  color: var(--accent);
+  display: block;
+  flex: 0 0 auto;
+  height: 64px;
+  align-self: flex-end;
+  border-radius: 8px 8px 0 0;
+  overflow: hidden;
+}
+.brand-logo {
+  display: block;
+  width: auto;
+  height: 64px;
 }
 nav {
   display: flex;
@@ -73,11 +94,11 @@ nav a:hover {
   right: 0;
   width: min(330px, calc(100vw - 40px));
   padding: 18px;
-  border: 1px solid #e2e4e8;
+  border: 1px solid var(--border);
   border-radius: 12px;
   background: #fff;
   color: var(--ink);
-  box-shadow: 0 14px 35px #0003;
+  box-shadow: 0 14px 35px #2a292833;
 }
 .local-login-popover > strong {
   display: block;
@@ -96,7 +117,7 @@ nav a:hover {
   content: "";
   height: 1px;
   flex: 1;
-  background: #e2e4e8;
+  background: var(--border);
 }
 .local-login-divider span {
   white-space: nowrap;
@@ -114,13 +135,13 @@ nav a:hover {
   gap: 2px;
   width: 100%;
   padding: 9px 11px;
-  border: 1px solid #e2e4e8;
-  background: #f8f8f6;
+  border: 1px solid var(--border);
+  background: var(--surface-muted);
   text-align: left;
 }
 .local-login-users button:hover {
-  border-color: #c99a14;
-  background: #fffaf0;
+  border-color: var(--accent);
+  background: var(--surface-accent);
 }
 .local-login-users small {
   color: var(--muted);
@@ -148,14 +169,14 @@ main {
   align-items: center;
   gap: 10px;
   padding: 0 14px;
-  border: 1px solid #d9dce1;
+  border: 1px solid var(--border);
   border-radius: 12px;
   background: #fff;
-  box-shadow: 0 2px 9px #18202d0a;
+  box-shadow: 0 2px 9px var(--shadow);
 }
 .market-search:focus-within {
-  border-color: #9a7508;
-  box-shadow: 0 0 0 3px #e7b21c2e;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--focus-ring);
 }
 .market-search svg {
   width: 19px;
@@ -174,10 +195,10 @@ main {
 }
 .market-table-wrap {
   overflow-x: auto;
-  border: 1px solid #e2e4e8;
+  border: 1px solid var(--border);
   border-radius: 15px;
   background: #fff;
-  box-shadow: 0 3px 16px #18202d0b;
+  box-shadow: 0 3px 16px var(--shadow);
 }
 .market-table {
   width: 100%;
@@ -188,12 +209,12 @@ main {
 .market-table th,
 .market-table td {
   padding: 17px 18px;
-  border-bottom: 1px solid #eceef1;
+  border-bottom: 1px solid var(--border);
   vertical-align: middle;
 }
 .market-table th {
-  background: #f8f8f6;
-  color: #5a6270;
+  background: var(--surface-muted);
+  color: var(--muted);
   font-size: 0.74rem;
   font-weight: 800;
   letter-spacing: 0.055em;
@@ -203,7 +224,7 @@ main {
 .market-table tfoot th,
 .market-table tfoot td {
   border-bottom: 0;
-  background: #f8f8f6;
+  background: var(--surface-muted);
   font-weight: 800;
 }
 .market-table tfoot th {
@@ -221,15 +242,15 @@ main {
 }
 .market-listing-group:hover td,
 .market-listing-group:focus-visible td {
-  background: #fffcf1;
+  background: var(--surface-accent);
 }
 .market-listing-group:focus-visible td:first-child {
-  box-shadow: inset 3px 0 #9a7508;
+  box-shadow: inset 3px 0 var(--accent);
 }
 .market-publication-intro td {
   max-width: 0;
   padding-block: 9px;
-  background: #fbfaf6;
+  background: var(--surface-muted);
   color: var(--muted);
   font-size: 0.78rem;
 }
@@ -250,14 +271,14 @@ main {
   white-space: nowrap;
 }
 .market-publication-meta strong {
-  color: #424853;
+  color: var(--ink);
   font-weight: 750;
 }
 .market-publication-description {
   min-width: 0;
   overflow: hidden;
   padding-left: 10px;
-  border-left: 1px solid #dfe2e6;
+  border-left: 1px solid var(--border);
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -277,7 +298,7 @@ main {
   object-fit: cover;
 }
 .market-thumbnail-placeholder {
-  background: linear-gradient(135deg, #232a36, #101319);
+  background: linear-gradient(135deg, var(--tuatara), #3b3938);
   color: var(--accent);
   font-size: 0.9rem;
   font-weight: 900;
@@ -324,7 +345,7 @@ main {
 }
 .market-table th.market-price {
   z-index: 3;
-  background: #f8f8f6;
+  background: var(--surface-muted);
   text-align: right;
 }
 .market-unit-price {
@@ -338,13 +359,13 @@ main {
 }
 .market-listing-group:hover .market-price,
 .market-listing-group:focus-visible .market-price {
-  background: #fffcf1;
+  background: var(--surface-accent);
 }
 .hero {
   padding: 60px;
   border-radius: 24px;
-  background: linear-gradient(125deg, #151922, #303846);
-  color: #fff;
+  background: linear-gradient(125deg, var(--tuatara), #454244);
+  color: var(--paper);
 }
 .hero h1 {
   max-width: 720px;
@@ -353,7 +374,7 @@ main {
   margin: 0 0 22px;
 }
 .hero p {
-  color: #d4d8df;
+  color: var(--pewter);
   max-width: 620px;
   font-size: 1.15rem;
 }
@@ -373,7 +394,7 @@ main {
 }
 .eyebrow {
   margin: 0;
-  color: #8a6700;
+  color: #9c5944;
   font-size: 0.75rem;
   font-weight: 850;
   letter-spacing: 0.12em;
@@ -388,14 +409,14 @@ main {
   overflow: hidden;
   border-radius: 15px;
   background: var(--card);
-  box-shadow: 0 2px 12px #18202d10;
+  box-shadow: 0 2px 12px var(--shadow);
   transition:
     transform 0.16s ease,
     box-shadow 0.16s ease;
 }
 .listing-card:hover {
   transform: translateY(-3px);
-  box-shadow: 0 9px 24px #18202d1c;
+  box-shadow: 0 9px 24px #2a29282b;
 }
 .listing-card-image {
   position: relative;
@@ -403,7 +424,7 @@ main {
   height: 230px;
   place-items: center;
   overflow: hidden;
-  background: linear-gradient(135deg, #232a36, #101319);
+  background: linear-gradient(135deg, var(--tuatara), #3b3938);
   color: var(--accent);
   font-size: 2rem;
   font-weight: 900;
@@ -421,7 +442,7 @@ main {
   padding: 5px 8px;
   border-radius: 999px;
   background: var(--accent);
-  color: #181818;
+  color: var(--ink);
   font-size: 0.68rem;
   font-weight: 850;
   letter-spacing: 0.06em;
@@ -464,8 +485,8 @@ main {
 .shipping-pill {
   padding: 6px 10px;
   border-radius: 999px;
-  background: #fff3c4;
-  color: #725300;
+  background: var(--surface-accent);
+  color: #7b4939;
   font-size: 0.78rem;
   font-weight: 800;
 }
@@ -508,22 +529,22 @@ main {
   min-width: 30px;
   padding: 6px 8px;
   border-radius: 7px;
-  background: #f2f4f7;
+  background: var(--surface-cool);
   text-align: center;
   font-weight: 800;
 }
 .claim-quantity.selected {
-  background: #dbeafe;
-  color: #1d4ed8;
+  background: var(--surface-accent);
+  color: #7b4939;
 }
 .listing-table tr.claim-selected td {
-  background: #eff6ff;
+  background: var(--surface-accent);
 }
 .listing-table tr.claim-selected td:first-child {
-  box-shadow: inset 3px 0 #2563eb;
+  box-shadow: inset 3px 0 var(--accent);
 }
 .secondary-action {
-  background: #eceff3;
+  background: var(--surface-cool);
 }
 button:disabled {
   cursor: not-allowed;
@@ -641,7 +662,7 @@ button:disabled {
 }
 .empty-feed {
   padding: 44px 24px;
-  border: 1px dashed #98a2b3;
+  border: 1px dashed var(--pewter);
   border-radius: 15px;
   text-align: center;
 }
@@ -662,7 +683,7 @@ button {
   border: 0;
   cursor: pointer;
   background: var(--accent);
-  color: #161616;
+  color: var(--ink);
   padding: 11px 17px;
   border-radius: 9px;
   font-weight: 750;
@@ -686,7 +707,7 @@ button {
   background: var(--card);
   padding: 22px;
   border-radius: 14px;
-  box-shadow: 0 2px 12px #18202d10;
+  box-shadow: 0 2px 12px var(--shadow);
 }
 .publication img {
   display: block;
@@ -699,7 +720,7 @@ button {
   margin-bottom: 22px;
   overflow: hidden;
   border-radius: 9px;
-  background: #111;
+  background: var(--tuatara);
 }
 .image-carousel-track {
   display: flex;
@@ -801,7 +822,7 @@ form {
   align-items: center;
   min-height: 43px;
   padding: 7px 11px;
-  border: 1px solid #d0d5dd;
+  border: 1px solid var(--border);
   border-radius: 10px;
   background: #fff;
   color: var(--muted);
@@ -812,10 +833,10 @@ form {
     color 0.16s ease;
 }
 .shipping-option:hover {
-  border-color: #b78a0b;
+  border-color: var(--accent);
 }
 .shipping-option:focus-within {
-  outline: 3px solid #e7b21c40;
+  outline: 3px solid var(--focus-ring);
   outline-offset: 2px;
 }
 .shipping-option.active {
@@ -829,7 +850,7 @@ form {
   height: 24px;
   flex: 0 0 24px;
   place-items: center;
-  border: 2px solid #98a2b3;
+  border: 2px solid var(--pewter);
   border-radius: 6px;
   color: transparent;
   font-size: 0.95rem;
@@ -853,7 +874,7 @@ form {
 .toggle-group {
   display: flex;
   padding: 3px;
-  border: 1px solid #d0d5dd;
+  border: 1px solid var(--border);
   border-radius: 10px;
   background: #fff;
 }
@@ -1007,8 +1028,8 @@ form {
 .dashboard-listing-menu summary:hover,
 .dashboard-listing-menu summary:focus-visible,
 .dashboard-listing-menu[open] summary {
-  background: #eef0f3;
-  color: #353b46;
+  background: var(--surface-cool);
+  color: var(--ink);
 }
 .dashboard-listing-menu summary:focus-visible {
   outline: 2px solid var(--accent);
@@ -1026,10 +1047,10 @@ form {
   right: 0;
   min-width: 142px;
   padding: 5px;
-  border: 1px solid #e2e5e9;
+  border: 1px solid var(--border);
   border-radius: 10px;
   background: var(--card);
-  box-shadow: 0 10px 28px #18202d24;
+  box-shadow: 0 10px 28px #2a292824;
 }
 .dashboard-listing-menu-popover button {
   width: 100%;
@@ -1088,9 +1109,9 @@ label {
 .image-dropzone {
   min-height: 190px;
   padding: 28px;
-  border: 2px dashed #98a2b3;
+  border: 2px dashed var(--pewter);
   border-radius: 14px;
-  background: #fffdf7;
+  background: var(--surface-muted);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -1108,8 +1129,8 @@ label {
 .image-dropzone:focus-visible,
 .image-dropzone.dragging {
   outline: none;
-  border-color: #b48500;
-  background: #fff8df;
+  border-color: var(--accent);
+  background: var(--surface-accent);
 }
 .image-dropzone.dragging {
   transform: scale(1.01);
@@ -1118,7 +1139,7 @@ label {
   width: 42px;
   height: 42px;
   margin-bottom: 5px;
-  color: #9a7300;
+  color: var(--antique-brass);
   fill: none;
   stroke: currentColor;
   stroke-linecap: round;
@@ -1166,7 +1187,7 @@ label {
   bottom: 7px;
   padding: 3px 7px;
   border-radius: 999px;
-  background: #171b23dd;
+  background: #2a2928dd;
   color: #fff;
   font-size: 0.7rem;
   font-weight: 700;
@@ -1180,14 +1201,14 @@ label {
   padding: 0;
   border: 1px solid #ffffff90;
   border-radius: 50%;
-  background: #171b23dd;
+  background: #2a2928dd;
   color: #fff;
   line-height: 1;
 }
 input,
 select,
 textarea {
-  border: 1px solid #d0d5dd;
+  border: 1px solid var(--border);
   background: #fff;
   padding: 11px;
   border-radius: 8px;
@@ -1296,10 +1317,10 @@ textarea {
   margin: 0;
   padding: 4px;
   list-style: none;
-  border: 1px solid #d0d5dd;
+  border: 1px solid var(--border);
   border-radius: 8px;
   background: #fff;
-  box-shadow: 0 8px 24px #18202d20;
+  box-shadow: 0 8px 24px #2a292820;
 }
 .autocomplete-results li {
   display: grid;
@@ -1309,7 +1330,7 @@ textarea {
   cursor: pointer;
 }
 .autocomplete-results li.active {
-  background: #f4f1e8;
+  background: var(--surface-accent);
 }
 .autocomplete-results small {
   color: var(--muted);
@@ -1317,7 +1338,7 @@ textarea {
 }
 .autocomplete-results mark {
   padding: 0;
-  background: #f9df92;
+  background: #e8c8be;
   color: inherit;
   font-weight: 800;
 }
@@ -1410,7 +1431,7 @@ textarea {
 .table td {
   text-align: left;
   padding: 12px 8px;
-  border-bottom: 1px solid #eaecf0;
+  border-bottom: 1px solid var(--border);
 }
 .stack {
   display: grid;
@@ -1420,7 +1441,7 @@ textarea {
   font-size: 0.78rem;
   text-transform: uppercase;
   padding: 4px 7px;
-  background: #eef0f3;
+  background: var(--surface-cool);
   border-radius: 999px;
 }
 .panel img {

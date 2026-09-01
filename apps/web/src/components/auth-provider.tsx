@@ -1,5 +1,6 @@
 "use client";
 import { GoogleOAuthProvider, GoogleLogin } from "@react-oauth/google";
+import Image from "next/image";
 import { createContext, useContext, useEffect, useRef, useState } from "react";
 import { api } from "../lib/api";
 
@@ -75,7 +76,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       <AuthContext.Provider value={{ token, isLoading, signOut }}>
         <header className="topbar">
           <a className="brand" href="/">
-            SWU compraventa
+            <Image
+              className="brand-logo"
+              src="/its-a-deal-logo.jpg"
+              alt="It's a Deal"
+              width={792}
+              height={422}
+              priority
+            />
           </a>
           <nav>
             {token && <a href="/vendo">Vendo</a>}
