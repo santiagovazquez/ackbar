@@ -68,6 +68,10 @@ absolute local SQLite `DATABASE_URL`; deployment refuses to migrate a remote lib
 
 Every deployment stops the app briefly, creates and checks an SQLite snapshot, migrates, switches
 the release, and restarts `ackbar-api` and `ackbar-web`. Failure restores the prior release and snapshot.
+The repository's `.nvmrc` selects its own Node.js major without changing the server's NVM default,
+and its pinned PM2 package runs with isolated state in `/home/deploy/ackbar-web/shared/pm2`. The first
+deployment removes only `ackbar-api` and `ackbar-web` from the server-wide PM2 daemon; other PM2
+applications and the default Node.js version are not changed.
 Roll back code while preserving current data with:
 
 ```sh

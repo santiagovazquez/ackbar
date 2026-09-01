@@ -46,11 +46,38 @@ ln -sfn "$web_env" "$release/apps/web/.env.production"
 
 # --- Runtime and build -------------------------------------------------------
 
-# Use the default Node.js runtime and global tools already provisioned on the
-# server without loading NVM into this non-interactive shell.
-node_version="$(<"$HOME/.nvm/alias/default")"
-export PATH="$HOME/.nvm/versions/node/$node_version/bin:$PATH"
-for runtime_command in node corepack pm2; do
+# Select the Node major pinned by this repository. NVM installs it alongside
+# other versions and does not modify the server's default alias.
+export NVM_DIR="$HOME/.nvm"
+if [[ ! -s "$NVM_DIR/nvm.sh" ]]; then
+  echo "nvm is not installed on the server" >&2
+  exit 1
+fi
+set +u
+# shellcheck source=/dev/null
+. "$NVM_DIR/nvm.sh"
+
+# Remember the server-default PM2 client before selecting this application's
+# runtime. Non-interactive SSH shells do not necessarily include it in PATH.
+# It is used only for the one-time migration of the two ackbar processes.
+legacy_node_version="$(nvm version default)"
+legacy_node_bin="$NVM_DIR/versions/node/$legacy_node_version/bin"
+legacy_path="$legacy_node_bin:$PATH"
+legacy_pm2_bin=""
+if [[ -x "$legacy_node_bin/pm2" ]]; then
+  legacy_pm2_bin="$legacy_node_bin/pm2"
+fi
+legacy_pm2_home="${PM2_HOME:-$HOME/.pm2}"
+
+nvm install "$(<"$release/.nvmrc")"
+nvm use "$(<"$release/.nvmrc")"
+set -u
+
+# A separate PM2 home creates a daemon and process dump owned only by this app.
+export PM2_HOME="$shared/pm2"
+mkdir -p "$PM2_HOME"
+
+for runtime_command in node corepack; do
   if ! command -v "$runtime_command" >/dev/null; then
     echo "$runtime_command is not installed on the server" >&2
     exit 1
@@ -61,6 +88,21 @@ corepack prepare pnpm@10.17.1 --activate
 cd "$release"
 pnpm install --frozen-lockfile
 pnpm build
+pm2_bin="$release/node_modules/.bin/pm2"
+if [[ ! -x "$pm2_bin" ]]; then
+  echo "The repository-pinned PM2 installation is missing" >&2
+  exit 1
+fi
+
+app_pm2() {
+  "$pm2_bin" "$@"
+}
+
+legacy_pm2() {
+  if [[ -n "$legacy_pm2_bin" ]]; then
+    env PATH="$legacy_path" PM2_HOME="$legacy_pm2_home" "$legacy_pm2_bin" "$@"
+  fi
+}
 
 # The old release stays online throughout installation and compilation.
 old_release=""
@@ -88,10 +130,10 @@ recover() {
 
   if [[ -n "$old_release" && -d "$old_release" ]]; then
     ln -sfn "$old_release" "$current"
-    pm2 startOrReload "$old_release/ecosystem.config.cjs" --update-env || true
+    app_pm2 startOrReload "$old_release/ecosystem.config.cjs" --update-env || true
   elif [[ "$services_stopped" == true ]]; then
     # A failed first deployment has no old release to restart.
-    pm2 delete ackbar-api ackbar-web 2>/dev/null || true
+    app_pm2 delete ackbar-api ackbar-web 2>/dev/null || true
   fi
 
   exit "$exit_code"
@@ -103,7 +145,12 @@ trap recover ERR
 
 # This creates a short maintenance window. Stopping writes guarantees that an
 # automatic restore cannot discard data written after the snapshot.
-pm2 stop ackbar-api ackbar-web 2>/dev/null || true
+app_pm2 stop ackbar-api ackbar-web 2>/dev/null || true
+# Releases deployed before runtime isolation may still belong to the default
+# PM2 daemon. Remove only this application's two entries and persist the
+# remaining server-wide process list.
+legacy_pm2 delete ackbar-api ackbar-web 2>/dev/null || true
+legacy_pm2 save 2>/dev/null || true
 services_stopped=true
 
 backup="$(bash "$release/scripts/backup-database.sh" "$release_id" "$api_env")"
@@ -126,8 +173,8 @@ if [[ -n "$old_release" ]]; then
 fi
 
 ln -sfn "$release" "$current"
-pm2 startOrReload "$release/ecosystem.config.cjs" --update-env
-pm2 save
+app_pm2 startOrReload "$release/ecosystem.config.cjs" --update-env
+app_pm2 save
 
 # Give the API up to 20 seconds to start, then require both applications to
 # answer locally. A failed check invokes recover().

@@ -22,6 +22,7 @@
     "eslint-config-prettier": "^10.1.8",
     "eslint-plugin-react-hooks": "^7.1.1",
     "globals": "^17.11.0",
+    "pm2": "6.0.13",
     "prettier": "^3.9.6",
     "typescript-eslint": "^8.68.0"
   }

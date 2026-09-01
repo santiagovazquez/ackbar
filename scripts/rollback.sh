@@ -35,16 +35,29 @@ if [[ ! -d "$target_release" ]]; then
   exit 1
 fi
 
-# --- Validate the server runtime --------------------------------------------
+# --- Validate the application runtime ---------------------------------------
 
-node_version="$(<"$HOME/.nvm/alias/default")"
-export PATH="$HOME/.nvm/versions/node/$node_version/bin:$PATH"
-for runtime_command in node pm2; do
-  if ! command -v "$runtime_command" >/dev/null; then
-    echo "$runtime_command is not installed on the server" >&2
-    exit 1
-  fi
-done
+export NVM_DIR="$HOME/.nvm"
+if [[ ! -s "$NVM_DIR/nvm.sh" ]]; then
+  echo "nvm is not installed on the server" >&2
+  exit 1
+fi
+set +u
+# shellcheck source=/dev/null
+. "$NVM_DIR/nvm.sh"
+nvm use "$(<"$current_release/.nvmrc")"
+set -u
+
+export PM2_HOME="$deploy_root/shared/pm2"
+pm2_bin="$current_release/node_modules/.bin/pm2"
+if [[ ! -x "$pm2_bin" ]]; then
+  echo "The repository-pinned PM2 installation is missing" >&2
+  exit 1
+fi
+
+app_pm2() {
+  "$pm2_bin" "$@"
+}
 
 # --- Automatic failure recovery ---------------------------------------------
 
@@ -56,7 +69,7 @@ recover() {
   trap - ERR
   echo "Rollback failed; restarting the current release." >&2
   ln -sfn "$current_release" "$current"
-  pm2 startOrReload "$current_release/ecosystem.config.cjs" --update-env || true
+  app_pm2 startOrReload "$current_release/ecosystem.config.cjs" --update-env || true
   exit "$exit_code"
 }
 
@@ -65,7 +78,7 @@ trap recover ERR
 # --- Stop, optionally restore, and switch -----------------------------------
 
 # The API must not write while its database file is being replaced.
-pm2 stop ackbar-api ackbar-web 2>/dev/null || true
+app_pm2 stop ackbar-api ackbar-web 2>/dev/null || true
 
 if [[ "$restore_db" == true ]]; then
   # deploy-release.sh records the snapshot path in the release that performed
@@ -78,8 +91,8 @@ fi
 ln -sfn "$target_release" "$current"
 ln -sfn "$current_release" "$previous"
 
-pm2 startOrReload "$target_release/ecosystem.config.cjs" --update-env
-pm2 save
+app_pm2 startOrReload "$target_release/ecosystem.config.cjs" --update-env
+app_pm2 save
 
 # --- Verify the restored release --------------------------------------------
 
