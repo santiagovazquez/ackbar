@@ -25,6 +25,17 @@ beforeAll(async () => {
   const [{ app }, dbModule] = await Promise.all([import("./app.js"), import("./db.js")]);
   request = supertest(app);
   database = dbModule.db;
+  for (const [token, username, whatsapp] of [
+    ["seller-token", "seller", "+5491111111111"],
+    ["buyer-token", "buyer", "+5491122222222"],
+  ] as const) {
+    await request.get("/users/me").set(authenticated(token));
+    const profile = await request
+      .put("/users/me/profile")
+      .set(authenticated(token))
+      .send({ username, whatsapp });
+    expect(profile.status).toBe(200);
+  }
 });
 
 afterAll(() => {
@@ -200,7 +211,7 @@ describe("marketplace lifecycle", () => {
       ).status,
     ).toBe(201);
 
-    const profile = await request.get("/users/usr_seller");
+    const profile = await request.get("/users/seller");
     expect(Number(profile.body.sales)).toBe(1);
     expect(Number(profile.body.seller_positive)).toBe(1);
   });
@@ -346,7 +357,7 @@ describe("marketplace lifecycle", () => {
         .map((claim: { status: string }) => claim.status),
     ).toEqual(["received", "received"]);
 
-    const sellerProfile = await request.get("/users/usr_seller");
+    const sellerProfile = await request.get("/users/seller");
     const buyerProfile = await request.get("/users/usr_buyer");
     expect(Number(sellerProfile.body.seller_positive)).toBeGreaterThanOrEqual(1);
     expect(Number(buyerProfile.body.buyer_neutral)).toBe(1);

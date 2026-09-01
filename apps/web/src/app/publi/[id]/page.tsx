@@ -52,7 +52,16 @@ export default async function PublicationPage({ params }: { params: Promise<{ id
           <span className="shipping-pill">Envío a cargo del comprador</span>
         )}
         <p className="publication-byline">
-          Publicado por <a href={`/perfil/${listing.seller.id}`}>{listing.seller.name}</a>{" "}
+          Publicado por{" "}
+          <a
+            href={
+              listing.seller.username
+                ? `/${listing.seller.username}`
+                : `/perfil/${listing.seller.id}`
+            }
+          >
+            {listing.seller.name}
+          </a>{" "}
           <time dateTime={listing.createdAt}>{formatDuration(listing.createdAt)}</time>
         </p>
         {listing.description && <p className="listing-detail-description">{listing.description}</p>}

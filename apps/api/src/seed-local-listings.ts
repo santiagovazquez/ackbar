@@ -52,6 +52,8 @@ const seedSchema = z.object({
     id: z.string().min(1),
     email: z.email(),
     name: z.string().min(1),
+    username: z.string().min(3).optional(),
+    whatsapp: z.string().optional(),
     avatarUrl: z.url().nullable().default(null),
   }),
   listings: z.array(listingSchema),
@@ -70,14 +72,16 @@ try {
   await migrate();
 
   await db.execute({
-    sql: `INSERT INTO users (id, google_sub, email, name, avatar_url)
-          VALUES (?, ?, ?, ?, ?)
-          ON CONFLICT(id) DO UPDATE SET email=excluded.email, name=excluded.name, avatar_url=excluded.avatar_url`,
+    sql: `INSERT INTO users (id, google_sub, email, name, username, whatsapp, avatar_url)
+          VALUES (?, ?, ?, ?, ?, ?, ?)
+          ON CONFLICT(id) DO UPDATE SET email=excluded.email, name=excluded.name, username=excluded.username, whatsapp=excluded.whatsapp, avatar_url=excluded.avatar_url`,
     args: [
       seed.seller.id,
       `local-seed:${seed.seller.id}`,
       seed.seller.email,
       seed.seller.name,
+      seed.seller.username ?? seed.seller.id.replace(/[^a-z0-9_-]/gi, "_").toLowerCase(),
+      seed.seller.whatsapp ?? "+5491100000000",
       seed.seller.avatarUrl,
     ],
   });

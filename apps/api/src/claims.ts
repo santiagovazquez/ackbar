@@ -1,10 +1,11 @@
 import { Router } from "express";
 import { z } from "zod";
-import { requireAuth } from "./auth.js";
+import { requireAuth, requireCompletedProfile } from "./auth.js";
 import { db } from "./db.js";
 
 export const claimsRouter = Router();
 claimsRouter.use(requireAuth);
+claimsRouter.use(requireCompletedProfile);
 const claimSchema = z.object({
   itemId: z.string().min(1),
   quantity: z.number().int().positive(),

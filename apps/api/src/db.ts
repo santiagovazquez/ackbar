@@ -44,6 +44,21 @@ export async function migrate() {
   if (!listingItemColumns.rows.some((column) => String(column.name) === "detail")) {
     await db.execute(`ALTER TABLE listing_items ADD COLUMN detail TEXT`);
   }
+  const userColumns = await db.execute("PRAGMA table_info(users)");
+  const userColumnNames = new Set(userColumns.rows.map((column) => String(column.name)));
+  const userAdditions = [
+    !userColumnNames.has("username") && `ALTER TABLE users ADD COLUMN username TEXT`,
+    !userColumnNames.has("whatsapp") && `ALTER TABLE users ADD COLUMN whatsapp TEXT`,
+  ].filter((sql): sql is string => Boolean(sql));
+  if (userAdditions.length) {
+    await db.batch(
+      userAdditions.map((sql) => ({ sql })),
+      "write",
+    );
+  }
+  await db.execute(
+    `CREATE UNIQUE INDEX IF NOT EXISTS idx_users_username_nocase ON users(username COLLATE NOCASE) WHERE username IS NOT NULL`,
+  );
   await db.execute(
     `UPDATE listings SET description=title WHERE description IS NULL AND title IS NOT NULL AND title!=''`,
   );

@@ -24,6 +24,40 @@ usersRouter.get("/local-auth", async (_req, res) => {
 usersRouter.get("/me", requireAuth, (req, res) => {
   res.json({ user: req.user });
 });
+const profileSchema = z.object({
+  username: z
+    .string()
+    .trim()
+    .toLowerCase()
+    .min(3)
+    .max(30)
+    .regex(/^[a-z0-9](?:[a-z0-9_-]*[a-z0-9])?$/),
+  whatsapp: z
+    .string()
+    .trim()
+    .regex(/^\+[1-9]\d{7,14}$/),
+});
+usersRouter.put("/me/profile", requireAuth, async (req, res) => {
+  const body = profileSchema.safeParse(req.body);
+  if (!body.success)
+    return res.status(400).json({
+      error:
+        "Usá un nombre de 3 a 30 caracteres y un WhatsApp internacional, por ejemplo +5491123456789",
+    });
+  try {
+    await db.execute({
+      sql: `UPDATE users SET username=?, whatsapp=? WHERE id=?`,
+      args: [body.data.username, body.data.whatsapp, req.user!.id],
+    });
+    res.json({
+      user: { ...req.user, username: body.data.username, whatsapp: body.data.whatsapp },
+    });
+  } catch (error) {
+    if (error instanceof Error && /unique/i.test(error.message))
+      return res.status(409).json({ error: "Ese nombre de usuario ya está en uso" });
+    throw error;
+  }
+});
 usersRouter.get("/me/dashboard", requireAuth, async (req, res) => {
   await db.execute({
     sql: `UPDATE listings SET status='expired' WHERE owner_id=? AND status='active' AND expires_at<=?`,
@@ -34,11 +68,11 @@ usersRouter.get("/me/dashboard", requireAuth, async (req, res) => {
     args: [req.user!.id],
   });
   const purchases = await db.execute({
-    sql: `SELECT c.id,c.quantity,c.amount_cents,c.status,c.created_at,i.card_id,i.card_name,i.detail,card.set_code card_set_code,l.id listing_id,l.description,l.currency,l.listing_type,u.id counterparty_id,u.name counterparty_name,EXISTS(SELECT 1 FROM ratings r WHERE r.claim_id=c.id AND r.from_user_id=?) rated FROM claims c JOIN listing_items i ON i.id=c.item_id LEFT JOIN cards card ON card.id=i.card_id JOIN listings l ON l.id=i.listing_id JOIN users u ON u.id=CASE WHEN l.kind='sale' THEN l.owner_id ELSE c.user_id END WHERE ((l.kind='sale' AND c.user_id=?) OR (l.kind='wanted' AND l.owner_id=?)) AND c.status!='cancelled' ORDER BY c.created_at DESC`,
+    sql: `SELECT c.id,c.quantity,c.amount_cents,c.status,c.created_at,i.card_id,i.card_name,i.detail,card.set_code card_set_code,l.id listing_id,l.description,l.currency,l.listing_type,u.id counterparty_id,u.name counterparty_name,u.username counterparty_username,u.whatsapp counterparty_whatsapp,EXISTS(SELECT 1 FROM ratings r WHERE r.claim_id=c.id AND r.from_user_id=?) rated FROM claims c JOIN listing_items i ON i.id=c.item_id LEFT JOIN cards card ON card.id=i.card_id JOIN listings l ON l.id=i.listing_id JOIN users u ON u.id=CASE WHEN l.kind='sale' THEN l.owner_id ELSE c.user_id END WHERE ((l.kind='sale' AND c.user_id=?) OR (l.kind='wanted' AND l.owner_id=?)) AND c.status!='cancelled' ORDER BY c.created_at DESC`,
     args: [req.user!.id, req.user!.id, req.user!.id],
   });
   const sales = await db.execute({
-    sql: `SELECT c.id,c.quantity,c.amount_cents,c.status,c.created_at,i.card_id,i.card_name,i.detail,card.set_code card_set_code,l.id listing_id,l.description,l.currency,l.listing_type,u.id counterparty_id,u.name counterparty_name,EXISTS(SELECT 1 FROM ratings r WHERE r.claim_id=c.id AND r.from_user_id=?) rated FROM claims c JOIN listing_items i ON i.id=c.item_id LEFT JOIN cards card ON card.id=i.card_id JOIN listings l ON l.id=i.listing_id JOIN users u ON u.id=CASE WHEN l.kind='sale' THEN c.user_id ELSE l.owner_id END WHERE ((l.kind='sale' AND l.owner_id=?) OR (l.kind='wanted' AND c.user_id=?)) AND c.status!='cancelled' ORDER BY c.created_at DESC`,
+    sql: `SELECT c.id,c.quantity,c.amount_cents,c.status,c.created_at,i.card_id,i.card_name,i.detail,card.set_code card_set_code,l.id listing_id,l.description,l.currency,l.listing_type,u.id counterparty_id,u.name counterparty_name,u.username counterparty_username,u.whatsapp counterparty_whatsapp,EXISTS(SELECT 1 FROM ratings r WHERE r.claim_id=c.id AND r.from_user_id=?) rated FROM claims c JOIN listing_items i ON i.id=c.item_id LEFT JOIN cards card ON card.id=i.card_id JOIN listings l ON l.id=i.listing_id JOIN users u ON u.id=CASE WHEN l.kind='sale' THEN c.user_id ELSE l.owner_id END WHERE ((l.kind='sale' AND l.owner_id=?) OR (l.kind='wanted' AND c.user_id=?)) AND c.status!='cancelled' ORDER BY c.created_at DESC`,
     args: [req.user!.id, req.user!.id, req.user!.id],
   });
   const ratings = await db.execute({
@@ -53,19 +87,20 @@ usersRouter.get("/me/dashboard", requireAuth, async (req, res) => {
     ratings: ratings.rows[0],
   });
 });
-usersRouter.get("/:id", async (req, res) => {
+usersRouter.get("/:username", async (req, res) => {
   const user = await db.execute({
-    sql: `SELECT id,name,avatar_url FROM users WHERE id=?`,
-    args: [req.params.id],
+    sql: `SELECT id,name,username,avatar_url FROM users WHERE username=? COLLATE NOCASE OR id=?`,
+    args: [req.params.username, req.params.username],
   });
   if (!user.rows[0]) return res.status(404).json({ error: "User not found" });
+  const userId = String(user.rows[0].id);
   const stats = await db.execute({
     sql: `SELECT (SELECT COUNT(*) FROM claims c JOIN listing_items i ON i.id=c.item_id JOIN listings l ON l.id=i.listing_id WHERE c.status!='cancelled' AND ((l.kind='sale' AND l.owner_id=?) OR (l.kind='wanted' AND c.user_id=?))) sales, (SELECT COUNT(*) FROM claims c JOIN listing_items i ON i.id=c.item_id JOIN listings l ON l.id=i.listing_id WHERE c.status!='cancelled' AND ((l.kind='sale' AND c.user_id=?) OR (l.kind='wanted' AND l.owner_id=?))) purchases, COALESCE(SUM(role='buyer' AND value='positive'),0) buyer_positive,COALESCE(SUM(role='buyer' AND value='neutral'),0) buyer_neutral,COALESCE(SUM(role='buyer' AND value='negative'),0) buyer_negative,COALESCE(SUM(role='seller' AND value='positive'),0) seller_positive,COALESCE(SUM(role='seller' AND value='neutral'),0) seller_neutral,COALESCE(SUM(role='seller' AND value='negative'),0) seller_negative FROM ratings WHERE to_user_id=?`,
-    args: [req.params.id, req.params.id, req.params.id, req.params.id, req.params.id],
+    args: [userId, userId, userId, userId, userId],
   });
   const listings = await db.execute({
     sql: `SELECT id,kind,description,image_url,created_at,expires_at FROM listings WHERE owner_id=? AND status='active' AND is_active=1 AND expires_at>? ORDER BY created_at DESC`,
-    args: [req.params.id, new Date().toISOString()],
+    args: [userId, new Date().toISOString()],
   });
   res.json({ ...user.rows[0], ...stats.rows[0], listings: listings.rows });
 });

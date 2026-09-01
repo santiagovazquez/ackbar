@@ -4,6 +4,7 @@ import Image from "next/image";
 import { createContext, useContext, useEffect, useRef, useState } from "react";
 import { api } from "../lib/api";
 
+type AuthUser = { name: string; username: string | null; whatsapp: string | null };
 type Auth = { token: string | null; isLoading: boolean; signOut: () => void };
 type LocalUser = { id: string; name: string; email: string; token: string };
 const AuthContext = createContext<Auth>({ token: null, isLoading: true, signOut: () => undefined });
@@ -27,6 +28,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [token, setToken] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [localUsers, setLocalUsers] = useState<LocalUser[] | null>(null);
+  const [user, setUser] = useState<AuthUser | null>(null);
   const loginMenu = useRef<HTMLDetailsElement>(null);
   useEffect(() => {
     const storedToken = sessionStorage.getItem("google_id_token");
@@ -45,6 +47,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const signOut = () => {
     sessionStorage.removeItem("google_id_token");
     setToken(null);
+    setUser(null);
   };
   const selectLocalUser = (value: string) => {
     save(value);
@@ -70,6 +73,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
     const timeout = window.setTimeout(signOut, remaining);
     return () => window.clearTimeout(timeout);
+  }, [token]);
+  useEffect(() => {
+    if (!token) return;
+    api<{ user: AuthUser }>("/users/me", {
+      headers: { Authorization: `Bearer ${token}` },
+      cache: "no-store",
+    })
+      .then((response) => setUser(response.user))
+      .catch(signOut);
   }, [token]);
   return (
     <GoogleOAuthProvider clientId={process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID ?? ""}>
@@ -128,8 +140,91 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             )}
           </nav>
         </header>
+        {token && user && (!user.username || !user.whatsapp) && (
+          <Registration token={token} onComplete={setUser} />
+        )}
         {children}
       </AuthContext.Provider>
     </GoogleOAuthProvider>
+  );
+}
+
+function Registration({
+  token,
+  onComplete,
+}: {
+  token: string;
+  onComplete: (user: AuthUser) => void;
+}) {
+  const [username, setUsername] = useState("");
+  const [whatsapp, setWhatsapp] = useState("+54");
+  const [error, setError] = useState("");
+  const [busy, setBusy] = useState(false);
+  async function submit(event: React.FormEvent) {
+    event.preventDefault();
+    setBusy(true);
+    setError("");
+    try {
+      const response = await api<{ user: AuthUser }>("/users/me/profile", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ username, whatsapp }),
+      });
+      onComplete(response.user);
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : "No pudimos completar el registro.");
+      setBusy(false);
+    }
+  }
+  return (
+    <div className="registration-backdrop" role="presentation">
+      <section
+        className="registration-dialog"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="registration-title"
+      >
+        <h1 id="registration-title">Completá tu registro</h1>
+        <p>Elegí cómo te van a encontrar y dónde podrán contactarte después de un claim.</p>
+        <form onSubmit={submit}>
+          <label htmlFor="registration-username">Nombre de usuario</label>
+          <div className="username-field">
+            <span>ackb.ar/</span>
+            <input
+              id="registration-username"
+              value={username}
+              onChange={(event) => setUsername(event.target.value.toLowerCase())}
+              autoComplete="username"
+              pattern="[a-z0-9](?:[a-z0-9_-]*[a-z0-9])?"
+              minLength={3}
+              maxLength={30}
+              placeholder="tu_nombre"
+              required
+              autoFocus
+            />
+          </div>
+          <small>Entre 3 y 30 caracteres: letras minúsculas, números, guion o guion bajo.</small>
+          <label htmlFor="registration-whatsapp">WhatsApp</label>
+          <input
+            id="registration-whatsapp"
+            type="tel"
+            value={whatsapp}
+            onChange={(event) => setWhatsapp(event.target.value.replace(/[\s()-]/g, ""))}
+            autoComplete="tel"
+            placeholder="+5491123456789"
+            required
+          />
+          <small>Sólo lo compartiremos con la otra persona cuando haya un claim.</small>
+          {error && (
+            <p className="error" role="alert">
+              {error}
+            </p>
+          )}
+          <button type="submit" disabled={busy}>
+            {busy ? "Guardando…" : "Crear mi perfil"}
+          </button>
+        </form>
+      </section>
+    </div>
   );
 }

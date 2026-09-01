@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { z } from "zod";
 import { db } from "./db.js";
-import { requireAuth } from "./auth.js";
+import { requireAuth, requireCompletedProfile } from "./auth.js";
 
 export const listingsRouter = Router();
 const cardSchema = z.object({
@@ -73,7 +73,7 @@ async function serializeListing(id: string, availableItemsOnly = false) {
     args: [id, new Date().toISOString()],
   });
   const listing = await db.execute({
-    sql: `SELECT l.*, u.name owner_name, u.avatar_url FROM listings l JOIN users u ON u.id=l.owner_id WHERE l.id=?`,
+    sql: `SELECT l.*, u.name owner_name, u.username owner_username, u.avatar_url FROM listings l JOIN users u ON u.id=l.owner_id WHERE l.id=?`,
     args: [id],
   });
   const row = listing.rows[0];
@@ -107,7 +107,12 @@ async function serializeListing(id: string, availableItemsOnly = false) {
     status: Number(row.is_active) ? row.status : "inactive",
     createdAt: row.created_at,
     expiresAt: row.expires_at,
-    seller: { id: row.owner_id, name: row.owner_name, avatarUrl: row.avatar_url },
+    seller: {
+      id: row.owner_id,
+      username: row.owner_username,
+      name: row.owner_name,
+      avatarUrl: row.avatar_url,
+    },
     items: items.rows.map((i) => ({
       id: i.id,
       cardId: i.card_id,
@@ -186,7 +191,7 @@ listingsRouter.get("/:id", async (req, res) => {
     res.status(404).json({ error: "Publication not found" });
   }
 });
-listingsRouter.post("/", requireAuth, async (req, res) => {
+listingsRouter.post("/", requireAuth, requireCompletedProfile, async (req, res) => {
   const parsed = createSchema.safeParse(req.body);
   if (!parsed.success)
     return res.status(400).json({ error: "Invalid publication", details: parsed.error.flatten() });

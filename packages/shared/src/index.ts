@@ -25,6 +25,7 @@ export interface CreateListingInput {
 
 export interface UserSummary {
   id: string;
+  username: string | null;
   name: string;
   avatarUrl: string | null;
 }

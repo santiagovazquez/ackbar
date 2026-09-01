@@ -8,6 +8,8 @@ export interface AuthUser {
   email: string;
   name: string;
   avatarUrl: string | null;
+  username: string | null;
+  whatsapp: string | null;
 }
 declare global {
   namespace Express {
@@ -34,7 +36,7 @@ async function authenticateLocalToken(token: string): Promise<AuthUser | null> {
   }
   if (!id) return null;
   const result = await db.execute({
-    sql: `SELECT id,email,name,avatar_url FROM users WHERE id=?`,
+    sql: `SELECT id,email,name,avatar_url,username,whatsapp FROM users WHERE id=?`,
     args: [id],
   });
   const user = result.rows[0];
@@ -44,6 +46,8 @@ async function authenticateLocalToken(token: string): Promise<AuthUser | null> {
         email: String(user.email),
         name: String(user.name),
         avatarUrl: user.avatar_url == null ? null : String(user.avatar_url),
+        username: user.username == null ? null : String(user.username),
+        whatsapp: user.whatsapp == null ? null : String(user.whatsapp),
       }
     : null;
 }
@@ -73,9 +77,26 @@ export async function requireAuth(req: Request, res: Response, next: NextFunctio
       sql: `INSERT INTO users (id, google_sub, email, name, avatar_url) VALUES (?, ?, ?, ?, ?) ON CONFLICT(google_sub) DO UPDATE SET email=excluded.email, name=excluded.name, avatar_url=excluded.avatar_url`,
       args: [id, payload.sub, payload.email, payload.name, payload.picture ?? null],
     });
-    req.user = { id, email: payload.email, name: payload.name, avatarUrl: payload.picture ?? null };
+    const saved = await db.execute({
+      sql: `SELECT username,whatsapp FROM users WHERE id=?`,
+      args: [id],
+    });
+    req.user = {
+      id,
+      email: payload.email,
+      name: payload.name,
+      avatarUrl: payload.picture ?? null,
+      username: saved.rows[0]?.username == null ? null : String(saved.rows[0].username),
+      whatsapp: saved.rows[0]?.whatsapp == null ? null : String(saved.rows[0].whatsapp),
+    };
     next();
   } catch {
     res.status(401).json({ error: "Invalid or expired identity token" });
   }
+}
+
+export function requireCompletedProfile(req: Request, res: Response, next: NextFunction) {
+  if (!req.user?.username || !req.user.whatsapp)
+    return res.status(403).json({ error: "Completá tu registro antes de continuar" });
+  next();
 }

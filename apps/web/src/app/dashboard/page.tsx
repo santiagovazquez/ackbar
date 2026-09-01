@@ -18,6 +18,8 @@ interface Exchange {
   description: string | null;
   counterparty_id: string;
   counterparty_name: string;
+  counterparty_username: string | null;
+  counterparty_whatsapp: string | null;
   rated: number;
   currency: "ARS" | "USD";
 }
@@ -155,9 +157,11 @@ export default function Dashboard() {
   }, [isLoading, router, token]);
   useEffect(() => {
     const closeListingMenus = (except?: HTMLDetailsElement | null) => {
-      document.querySelectorAll<HTMLDetailsElement>(".dashboard-listing-menu[open]").forEach((menu) => {
-        if (menu !== except) menu.open = false;
-      });
+      document
+        .querySelectorAll<HTMLDetailsElement>(".dashboard-listing-menu[open]")
+        .forEach((menu) => {
+          if (menu !== except) menu.open = false;
+        });
     };
     const handlePointerDown = (event: PointerEvent) => {
       const clickedMenu =
@@ -168,9 +172,7 @@ export default function Dashboard() {
     };
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key !== "Escape") return;
-      const openMenu = document.querySelector<HTMLDetailsElement>(
-        ".dashboard-listing-menu[open]",
-      );
+      const openMenu = document.querySelector<HTMLDetailsElement>(".dashboard-listing-menu[open]");
       if (!openMenu) return;
       openMenu.open = false;
       openMenu.querySelector<HTMLElement>("summary")?.focus();
@@ -282,8 +284,27 @@ export default function Dashboard() {
                 )}
               </span>
               <h3>
-                Entrega a <a href={`/perfil/${group.buyerId}`}>{group.buyerName}</a>
+                Entrega a{" "}
+                <a
+                  href={
+                    group.claims[0]!.counterparty_username
+                      ? `/${group.claims[0]!.counterparty_username}`
+                      : `/perfil/${group.buyerId}`
+                  }
+                >
+                  {group.buyerName}
+                </a>
               </h3>
+              {group.claims[0]!.counterparty_whatsapp && (
+                <a
+                  className="whatsapp-contact"
+                  href={`https://wa.me/${group.claims[0]!.counterparty_whatsapp.replace(/\D/g, "")}`}
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  Contactar por WhatsApp
+                </a>
+              )}
               <p>
                 <a href={`/publi/${group.claims[0]!.listing_id}`}>
                   {group.claims[0]!.description || "Ver publicación"}
@@ -393,8 +414,26 @@ export default function Dashboard() {
             return (
               <section className="panel" key={group.key}>
                 <h3>
-                  <a href={`/perfil/${group.id}`}>{group.name}</a>
+                  <a
+                    href={
+                      group.claims[0]!.counterparty_username
+                        ? `/${group.claims[0]!.counterparty_username}`
+                        : `/perfil/${group.id}`
+                    }
+                  >
+                    {group.name}
+                  </a>
                 </h3>
+                {group.claims[0]!.counterparty_whatsapp && (
+                  <a
+                    className="whatsapp-contact"
+                    href={`https://wa.me/${group.claims[0]!.counterparty_whatsapp.replace(/\D/g, "")}`}
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    Contactar por WhatsApp
+                  </a>
+                )}
                 <div className="market-table-wrap">
                   <table className="market-table">
                     <thead>
