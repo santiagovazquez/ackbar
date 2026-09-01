@@ -1,6 +1,8 @@
 "use client";
 import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { faBell } from "@fortawesome/free-solid-svg-icons";
 import { api } from "../lib/api";
 
 interface Notification {
@@ -38,7 +40,7 @@ export function Notifications({ token }: { token: string }) {
   return (
     <details className="notifications">
       <summary aria-label={`${unread} notificaciones sin leer`}>
-        <span aria-hidden="true">🔔</span>
+        <FontAwesomeIcon icon={faBell} aria-hidden="true" />
         {unread > 0 && <strong>{unread}</strong>}
       </summary>
       <div className="notifications-popover">

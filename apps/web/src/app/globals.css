@@ -142,9 +142,23 @@ nav a:hover {
 }
 .notifications summary {
   position: relative;
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
   list-style: none;
   cursor: pointer;
-  font-size: 1.2rem;
+  color: var(--text);
+  font-size: 1.05rem;
+  transition: color 0.2s ease, transform 0.2s ease;
+}
+.notifications summary:hover {
+  color: var(--accent);
+  transform: translateY(-1px);
+}
+.notifications summary svg {
+  width: 1em;
+  height: 1em;
 }
 .notifications summary::-webkit-details-marker {
   display: none;
