@@ -765,6 +765,11 @@ button {
   gap: 18px;
   margin-top: 28px;
 }
+.profile-publications {
+  display: grid;
+  gap: 28px;
+  margin-top: 28px;
+}
 .panel,
 .publication {
   background: var(--card);

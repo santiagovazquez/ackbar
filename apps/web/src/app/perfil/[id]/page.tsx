@@ -1,4 +1,6 @@
-import { apiUrl } from "../../../lib/api";
+import type { Listing } from "@swu/shared";
+import { Publication } from "../../../components/publication";
+import { apiUrl, getListing } from "../../../lib/api";
 
 const ReputationSummary = ({
   label,
@@ -43,6 +45,17 @@ export default async function Profile({ params }: { params: Promise<{ id: string
       </main>
     );
   const user = await response.json();
+  const listings = (
+    await Promise.all(
+      (user.listings ?? []).map(async ({ id }: { id: string }) => {
+        try {
+          return await getListing(id);
+        } catch {
+          return null;
+        }
+      }),
+    )
+  ).filter((listing: Listing | null): listing is Listing => listing !== null);
   return (
     <main>
       <section className="panel dashboard-overview">
@@ -73,22 +86,9 @@ export default async function Profile({ params }: { params: Promise<{ id: string
         </div>
       </section>
       <h2>Publicaciones activas</h2>
-      <div className="grid">
-        {user.listings?.length ? (
-          user.listings.map(
-            (listing: {
-              id: string;
-              kind: string;
-              description: string | null;
-              image_url: string | null;
-            }) => (
-              <a className="panel" href={`/publi/${listing.id}`} key={listing.id}>
-                {listing.image_url && <img src={listing.image_url} alt="" />}
-                <small>VENTA</small>
-                {listing.description && <p>{listing.description}</p>}
-              </a>
-            ),
-          )
+      <div className="profile-publications">
+        {listings.length ? (
+          listings.map((listing) => <Publication listing={listing} key={listing.id} />)
         ) : (
           <p className="muted">No tiene publicaciones activas.</p>
         )}
