@@ -1,5 +1,5 @@
 "use client";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faBell } from "@fortawesome/free-solid-svg-icons";
@@ -15,6 +15,7 @@ interface Notification {
 
 export function Notifications({ token }: { token: string }) {
   const router = useRouter();
+  const menu = useRef<HTMLDetailsElement>(null);
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const load = useCallback(() => {
     void api<Notification[]>("/users/me/notifications", {
@@ -27,6 +28,15 @@ export function Notifications({ token }: { token: string }) {
     const interval = window.setInterval(load, 30_000);
     return () => window.clearInterval(interval);
   }, [load]);
+  useEffect(() => {
+    const closeOnOutsideClick = (event: PointerEvent) => {
+      if (menu.current?.open && !menu.current.contains(event.target as Node)) {
+        menu.current.open = false;
+      }
+    };
+    document.addEventListener("pointerdown", closeOnOutsideClick);
+    return () => document.removeEventListener("pointerdown", closeOnOutsideClick);
+  }, []);
   const unread = notifications.filter((notification) => !notification.read_at).length;
   async function open(notification: Notification) {
     if (!notification.read_at) {
@@ -38,7 +48,7 @@ export function Notifications({ token }: { token: string }) {
     router.push(`/publi/${notification.listing_id}`);
   }
   return (
-    <details className="notifications">
+    <details className="notifications" ref={menu}>
       <summary aria-label={`${unread} notificaciones sin leer`}>
         <FontAwesomeIcon icon={faBell} aria-hidden="true" />
         {unread > 0 && <strong>{unread}</strong>}
