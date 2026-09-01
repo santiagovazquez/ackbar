@@ -224,6 +224,12 @@ nav a:hover {
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+.user-menu-popover hr {
+  width: 100%;
+  margin: 4px 0;
+  border: 0;
+  border-top: 1px solid var(--border);
+}
 .user-menu-popover a,
 .user-menu-popover button {
   width: 100%;

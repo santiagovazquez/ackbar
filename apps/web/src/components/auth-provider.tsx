@@ -143,8 +143,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                 <div className="user-menu-popover">
                   {user && <strong>{user.name}</strong>}
                   <a href="/dashboard" onClick={() => userMenu.current?.removeAttribute("open")}>
-                    Mi panel
+                    Mis publicaciones
                   </a>
+                  <a href="/entregas" onClick={() => userMenu.current?.removeAttribute("open")}>
+                    Entregas
+                  </a>
+                  <a href="/mis-claims" onClick={() => userMenu.current?.removeAttribute("open")}>
+                    Mis claims
+                  </a>
+                  <hr />
                   <button type="button" onClick={signOut}>
                     Cerrar sesión
                   </button>

@@ -1,6 +1,6 @@
 "use client";
 import { useCallback, useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { faWhatsapp } from "@fortawesome/free-brands-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { useAuth } from "../../components/auth-provider";
@@ -134,6 +134,14 @@ const ReputationSummary = ({
 export default function Dashboard() {
   const { token, isLoading } = useAuth();
   const router = useRouter();
+  const pathname = usePathname();
+  const view = pathname === "/entregas" ? "deliveries" : pathname === "/mis-claims" ? "claims" : "dashboard";
+  const pageTitle =
+    view === "deliveries"
+      ? "Entregas"
+      : view === "claims"
+        ? "Mis claims"
+        : "Mis publicaciones";
   const [data, setData] = useState<DashboardData | null>(null);
   const [error, setError] = useState("");
   const [listingsFilter, setListingsFilter] = useState<ListingsFilter>("active");
@@ -235,14 +243,14 @@ export default function Dashboard() {
   if (error)
     return (
       <main>
-        <h1>Mi panel</h1>
+        <h1>{pageTitle}</h1>
         <p className="error">{error}</p>
       </main>
     );
   if (!data)
     return (
       <main>
-        <h1>Mi panel</h1>
+        <h1>{pageTitle}</h1>
         <p>Cargando…</p>
       </main>
     );
@@ -534,6 +542,8 @@ export default function Dashboard() {
   };
   return (
     <main>
+      {view === "dashboard" && (
+        <>
       <section className="panel dashboard-overview">
         <div className="dashboard-overview-user">
           <h1>Hola, {data.user.name}</h1>
@@ -663,8 +673,12 @@ export default function Dashboard() {
           </nav>
         )}
       </div>
+        </>
+      )}
+      {view === "deliveries" && (
+        <>
       <div className="section-heading">
-        <h2>Ventas</h2>
+        <h1>Entregas</h1>
         <div className="toggle-group" role="group" aria-label="Filtrar ventas">
           <button
             type="button"
@@ -685,8 +699,14 @@ export default function Dashboard() {
         </div>
       </div>
       {sales}
-      <h2>Mis claims</h2>
-      {claims}
+        </>
+      )}
+      {view === "claims" && (
+        <>
+          <h1>Mis claims</h1>
+          {claims}
+        </>
+      )}
     </main>
   );
 }
