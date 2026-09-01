@@ -8,6 +8,7 @@ export type RatingValue = "positive" | "neutral" | "negative";
 export const RESERVED_PROFILE_USERNAMES = [
   "api",
   "busco",
+  "busquedas",
   "dashboard",
   "perfil",
   "publi",

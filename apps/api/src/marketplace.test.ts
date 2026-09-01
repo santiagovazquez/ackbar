@@ -350,6 +350,14 @@ describe("marketplace lifecycle", () => {
     expect(response.body.kind).toBe("wanted");
     expect(response.body.imageUrls).toEqual([]);
     expect(response.body.items[0]).toMatchObject({ name: "Luke Skywalker", quantity: 2 });
+
+    const wantedListings = await request.get("/listings/wanted");
+    expect(wantedListings.status).toBe(200);
+    expect(wantedListings.body[0]).toMatchObject({
+      id: response.body.id,
+      kind: "wanted",
+      seller: { name: "Buyer" },
+    });
   });
 
   it("notifies wanted-card matches and claims, and exposes wanted cards on profiles", async () => {

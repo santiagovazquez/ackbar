@@ -161,6 +161,17 @@ listingsRouter.get("/", async (req, res) => {
     ),
   );
 });
+listingsRouter.get("/wanted", async (_req, res) => {
+  const result = await db.execute({
+    sql: `SELECT id FROM listings
+          WHERE kind='wanted' AND status='active' AND is_active=1 AND expires_at > ?
+          ORDER BY created_at DESC, id DESC`,
+    args: [new Date().toISOString()],
+  });
+  res.json(
+    (await Promise.all(result.rows.map((row) => serializeListing(String(row.id))))).filter(Boolean),
+  );
+});
 listingsRouter.get("/cards/search", async (req, res) => {
   const query = String(req.query.q ?? "").trim();
   if (query.length < 1) return res.json([]);
