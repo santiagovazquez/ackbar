@@ -97,6 +97,21 @@ describe("marketplace lifecycle", () => {
     expect(restored.status).toBe(200);
   });
 
+  it("reserves existing top-level pages before public usernames", async () => {
+    for (const username of ["vendo", "DASHBOARD", "perfil", "publi", "api"]) {
+      const response = await request
+        .put("/users/me/profile")
+        .set(authenticated("seller-token"))
+        .send({ username, whatsapp: "+5491111111111" });
+
+      expect(response.status).toBe(409);
+      expect(response.body.error).toBe("Ese nombre de usuario está reservado");
+    }
+
+    const profile = await request.get("/users/seller");
+    expect(profile.status).toBe(200);
+  });
+
   it("allows switching among database users only through local auth", async () => {
     const googleIdentity = await request.get("/users/me").set(authenticated("seller-token"));
     expect(googleIdentity.status).toBe(200);

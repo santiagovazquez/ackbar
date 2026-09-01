@@ -4,6 +4,13 @@ export type Currency = "ARS" | "USD";
 export type ListingStatus = "active" | "closed" | "expired" | "inactive";
 export type RatingValue = "positive" | "neutral" | "negative";
 
+// Top-level application routes take precedence over public profile URLs.
+export const RESERVED_PROFILE_USERNAMES = ["api", "dashboard", "perfil", "publi", "vendo"] as const;
+
+export function isReservedProfileUsername(username: string): boolean {
+  return (RESERVED_PROFILE_USERNAMES as readonly string[]).includes(username.toLowerCase());
+}
+
 export interface CardInput {
   cardId: string;
   name: string;

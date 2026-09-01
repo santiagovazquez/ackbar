@@ -4,6 +4,7 @@ import { db } from "./db.js";
 import { requireAuth } from "./auth.js";
 import { localAuthToken } from "./auth.js";
 import { config } from "./config.js";
+import { isReservedProfileUsername } from "@swu/shared";
 
 export const usersRouter = Router();
 usersRouter.get("/local-auth", async (_req, res) => {
@@ -43,6 +44,8 @@ usersRouter.put("/me/profile", requireAuth, async (req, res) => {
       error:
         "El nombre de usuario debe tener al menos 3 letras y sólo puede contener letras, números y -. Usá un WhatsApp internacional, por ejemplo +5491123456789",
     });
+  if (isReservedProfileUsername(body.data.username))
+    return res.status(409).json({ error: "Ese nombre de usuario está reservado" });
   try {
     await db.execute({
       sql: `UPDATE users SET username=?, whatsapp=? WHERE id=?`,
