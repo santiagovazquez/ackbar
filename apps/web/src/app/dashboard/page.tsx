@@ -1,6 +1,8 @@
 "use client";
 import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { faWhatsapp } from "@fortawesome/free-brands-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { useAuth } from "../../components/auth-provider";
 import { api } from "../../lib/api";
 
@@ -277,7 +279,19 @@ export default function Dashboard() {
           );
           const groupAlreadyRated = group.claims.some((claim) => Boolean(claim.rated));
           return (
-            <article className="panel" key={group.key}>
+            <article className="panel sales-card" key={group.key}>
+              {group.claims[0]!.counterparty_whatsapp && (
+                <a
+                  className="whatsapp-contact-icon"
+                  href={`https://wa.me/${group.claims[0]!.counterparty_whatsapp.replace(/\D/g, "")}`}
+                  target="_blank"
+                  rel="noreferrer"
+                  aria-label={`Contactar a ${group.buyerName} por WhatsApp`}
+                  title="Contactar por WhatsApp"
+                >
+                  <FontAwesomeIcon icon={faWhatsapp} aria-hidden="true" />
+                </a>
+              )}
               <span className="status">
                 {exchangeStatusLabel(
                   pendingClaims.length > 0 ? "claimed" : group.claims[0]!.status,
@@ -295,16 +309,6 @@ export default function Dashboard() {
                   {group.buyerName}
                 </a>
               </h3>
-              {group.claims[0]!.counterparty_whatsapp && (
-                <a
-                  className="whatsapp-contact"
-                  href={`https://wa.me/${group.claims[0]!.counterparty_whatsapp.replace(/\D/g, "")}`}
-                  target="_blank"
-                  rel="noreferrer"
-                >
-                  Contactar por WhatsApp
-                </a>
-              )}
               <p>
                 <a href={`/publi/${group.claims[0]!.listing_id}`}>
                   {group.claims[0]!.description || "Ver publicación"}
