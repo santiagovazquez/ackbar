@@ -279,7 +279,7 @@ export default function Dashboard() {
           );
           const groupAlreadyRated = group.claims.some((claim) => Boolean(claim.rated));
           return (
-            <article className="panel sales-card" key={group.key}>
+            <article className="panel exchange-card" key={group.key}>
               {group.claims[0]!.counterparty_whatsapp && (
                 <a
                   className="whatsapp-contact-icon"
@@ -416,7 +416,19 @@ export default function Dashboard() {
             );
             const groupAlreadyRated = group.claims.some((claim) => Boolean(claim.rated));
             return (
-              <section className="panel" key={group.key}>
+              <section className="panel exchange-card" key={group.key}>
+                {group.claims[0]!.counterparty_whatsapp && (
+                  <a
+                    className="whatsapp-contact-icon"
+                    href={`https://wa.me/${group.claims[0]!.counterparty_whatsapp.replace(/\D/g, "")}`}
+                    target="_blank"
+                    rel="noreferrer"
+                    aria-label={`Contactar a ${group.name} por WhatsApp`}
+                    title="Contactar por WhatsApp"
+                  >
+                    <FontAwesomeIcon icon={faWhatsapp} aria-hidden="true" />
+                  </a>
+                )}
                 <h3>
                   <a
                     href={
@@ -428,16 +440,6 @@ export default function Dashboard() {
                     {group.name}
                   </a>
                 </h3>
-                {group.claims[0]!.counterparty_whatsapp && (
-                  <a
-                    className="whatsapp-contact"
-                    href={`https://wa.me/${group.claims[0]!.counterparty_whatsapp.replace(/\D/g, "")}`}
-                    target="_blank"
-                    rel="noreferrer"
-                  >
-                    Contactar por WhatsApp
-                  </a>
-                )}
                 <div className="market-table-wrap">
                   <table className="market-table">
                     <thead>
