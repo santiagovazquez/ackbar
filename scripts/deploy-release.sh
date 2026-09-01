@@ -46,7 +46,10 @@ ln -sfn "$web_env" "$release/apps/web/.env.production"
 
 # --- Runtime and build -------------------------------------------------------
 
-# Use the Node.js runtime and PM2 installation provisioned on the server.
+# Use the default Node.js runtime and global tools already provisioned on the
+# server without loading NVM into this non-interactive shell.
+node_version="$(<"$HOME/.nvm/alias/default")"
+export PATH="$HOME/.nvm/versions/node/$node_version/bin:$PATH"
 for runtime_command in node corepack pm2; do
   if ! command -v "$runtime_command" >/dev/null; then
     echo "$runtime_command is not installed on the server" >&2

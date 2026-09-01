@@ -37,6 +37,8 @@ fi
 
 # --- Validate the server runtime --------------------------------------------
 
+node_version="$(<"$HOME/.nvm/alias/default")"
+export PATH="$HOME/.nvm/versions/node/$node_version/bin:$PATH"
 for runtime_command in node pm2; do
   if ! command -v "$runtime_command" >/dev/null; then
     echo "$runtime_command is not installed on the server" >&2
