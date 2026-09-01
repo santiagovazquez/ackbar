@@ -50,6 +50,7 @@ interface DashboardData {
   ratings: RatingBreakdown;
 }
 type ListingsFilter = "active" | "inactive";
+type SalesFilter = "active" | "inactive";
 const LISTINGS_PER_PAGE = 5;
 const listingStatusLabel = (status: string) =>
   ({
@@ -133,6 +134,7 @@ export default function Dashboard() {
   const [error, setError] = useState("");
   const [listingsFilter, setListingsFilter] = useState<ListingsFilter>("active");
   const [listingsPage, setListingsPage] = useState(1);
+  const [salesFilter, setSalesFilter] = useState<SalesFilter>("active");
   const load = useCallback(async () => {
     if (!token) return;
     try {
@@ -249,12 +251,24 @@ export default function Dashboard() {
       });
     return groups;
   }, []);
+  const filteredSalesByDelivery = salesByDelivery.filter((group) => {
+    const groupAlreadyRated = group.claims.some((claim) => Boolean(claim.rated));
+    const isActive =
+      group.claims.some((claim) => claim.status === "claimed") ||
+      (!groupAlreadyRated &&
+        group.claims.some((claim) => claim.status === "received" && !claim.rated));
+    return salesFilter === "active" ? isActive : !isActive;
+  });
   const sales = (
     <div className="stack">
-      {salesByDelivery.length === 0 ? (
-        <p className="muted">Todavía no hay operaciones.</p>
+      {filteredSalesByDelivery.length === 0 ? (
+        <p className="muted">
+          {salesByDelivery.length === 0
+            ? "Todavía no hay operaciones."
+            : `No tenés ventas ${salesFilter === "active" ? "activas" : "inactivas"}.`}
+        </p>
       ) : (
-        salesByDelivery.map((group) => {
+        filteredSalesByDelivery.map((group) => {
           const pendingClaims = group.claims.filter((claim) => claim.status === "claimed");
           const ratingClaim = group.claims.find(
             (claim) => claim.status === "received" && !claim.rated,
@@ -593,7 +607,27 @@ export default function Dashboard() {
           </nav>
         )}
       </div>
-      <h2>Ventas</h2>
+      <div className="section-heading">
+        <h2>Ventas</h2>
+        <div className="toggle-group" role="group" aria-label="Filtrar ventas">
+          <button
+            type="button"
+            className={salesFilter === "active" ? "active" : undefined}
+            aria-pressed={salesFilter === "active"}
+            onClick={() => setSalesFilter("active")}
+          >
+            Activas
+          </button>
+          <button
+            type="button"
+            className={salesFilter === "inactive" ? "active" : undefined}
+            aria-pressed={salesFilter === "inactive"}
+            onClick={() => setSalesFilter("inactive")}
+          >
+            Inactivas
+          </button>
+        </div>
+      </div>
       {sales}
       <h2>Mis claims</h2>
       {claims}
