@@ -152,7 +152,12 @@ export function MarketTable({ listings }: { listings: Listing[] }) {
                         </td>
                       )}
                       <td className="market-price market-unit-price">
-                        {money(item.unitPriceCents, listing.currency)}
+                        <span>{money(item.unitPriceCents, listing.currency)}</span>
+                        {!isOther && item.playsetPriceCents != null && (
+                          <span className="market-mobile-playset-price">
+                            {money(item.playsetPriceCents, listing.currency)} (PS)
+                          </span>
+                        )}
                       </td>
                       <td className="market-price market-playset-price">
                         {isOther ? "—" : money(item.playsetPriceCents, listing.currency)}

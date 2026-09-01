@@ -333,6 +333,9 @@ main {
 .market-playset-price {
   right: 0;
 }
+.market-mobile-playset-price {
+  display: none;
+}
 .market-listing-group:hover .market-price,
 .market-listing-group:focus-visible .market-price {
   background: #fffcf1;
@@ -1133,7 +1136,7 @@ textarea {
 }
 @media (max-width: 620px) {
   .market-table {
-    min-width: 590px;
+    min-width: 0;
   }
   .market-image-heading,
   .market-thumbnail-cell {
@@ -1144,6 +1147,39 @@ textarea {
     width: 36px;
     min-width: 36px;
     padding-inline: 6px;
+  }
+  .market-table th,
+  .market-table td {
+    padding-inline: 10px;
+  }
+  .market-article {
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+  .market-price {
+    min-width: 118px;
+  }
+  .market-unit-price {
+    right: 0;
+  }
+  .market-table th.market-unit-price::after {
+    content: "Precio";
+  }
+  .market-table th.market-unit-price {
+    font-size: 0;
+  }
+  .market-table th.market-unit-price::after {
+    font-size: 0.74rem;
+  }
+  .market-playset-price {
+    display: none;
+  }
+  .market-mobile-playset-price {
+    display: block;
+    margin-top: 3px;
+    color: var(--muted);
+    font-size: 0.78rem;
+    font-weight: 600;
   }
   .hero {
     padding: 36px 24px;
