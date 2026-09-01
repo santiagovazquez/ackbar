@@ -11,10 +11,12 @@ export async function migrate() {
     `CREATE TABLE IF NOT EXISTS listing_images (id TEXT PRIMARY KEY, listing_id TEXT NOT NULL REFERENCES listings(id), url TEXT NOT NULL, position INTEGER NOT NULL)`,
     `CREATE TABLE IF NOT EXISTS claims (id TEXT PRIMARY KEY, item_id TEXT NOT NULL REFERENCES listing_items(id), user_id TEXT NOT NULL REFERENCES users(id), quantity INTEGER NOT NULL CHECK(quantity > 0), pricing_mode TEXT NOT NULL CHECK(pricing_mode IN ('unit','playset')), amount_cents INTEGER NOT NULL, status TEXT NOT NULL DEFAULT 'claimed' CHECK(status IN ('claimed','delivered','received','cancelled')), created_at TEXT NOT NULL)`,
     `CREATE TABLE IF NOT EXISTS ratings (id TEXT PRIMARY KEY, claim_id TEXT NOT NULL REFERENCES claims(id), from_user_id TEXT NOT NULL REFERENCES users(id), to_user_id TEXT NOT NULL REFERENCES users(id), role TEXT NOT NULL CHECK(role IN ('buyer','seller')), value TEXT NOT NULL CHECK(value IN ('positive','neutral','negative')), comment TEXT, created_at TEXT NOT NULL, UNIQUE(claim_id, from_user_id))`,
+    `CREATE TABLE IF NOT EXISTS notifications (id TEXT PRIMARY KEY, user_id TEXT NOT NULL REFERENCES users(id), type TEXT NOT NULL CHECK(type IN ('wanted_match','claim')), listing_id TEXT NOT NULL REFERENCES listings(id), claim_id TEXT REFERENCES claims(id), message TEXT NOT NULL, read_at TEXT, created_at TEXT NOT NULL)`,
     `CREATE TABLE IF NOT EXISTS cards (id TEXT PRIMARY KEY, name TEXT NOT NULL, subtitle TEXT, set_code TEXT, card_number TEXT, UNIQUE(name, subtitle, set_code, card_number))`,
     `CREATE INDEX IF NOT EXISTS idx_listings_owner ON listings(owner_id)`,
     `CREATE INDEX IF NOT EXISTS idx_claims_item ON claims(item_id)`,
     `CREATE INDEX IF NOT EXISTS idx_listing_images_listing ON listing_images(listing_id, position)`,
+    `CREATE INDEX IF NOT EXISTS idx_notifications_user ON notifications(user_id, created_at DESC)`,
   ];
   await db.batch(
     statements.map((sql) => ({ sql })),

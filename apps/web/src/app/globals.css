@@ -137,6 +137,73 @@ nav a:hover {
 .local-login {
   position: relative;
 }
+.notifications {
+  position: relative;
+}
+.notifications summary {
+  position: relative;
+  list-style: none;
+  cursor: pointer;
+  font-size: 1.2rem;
+}
+.notifications summary::-webkit-details-marker {
+  display: none;
+}
+.notifications summary strong {
+  position: absolute;
+  top: -9px;
+  right: -12px;
+  min-width: 18px;
+  padding: 1px 4px;
+  border-radius: 10px;
+  background: var(--accent);
+  color: white;
+  font-size: 0.65rem;
+  text-align: center;
+}
+.notifications-popover {
+  position: absolute;
+  z-index: 30;
+  top: calc(100% + 14px);
+  right: 0;
+  width: min(380px, calc(100vw - 30px));
+  max-height: 430px;
+  overflow: auto;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: white;
+  color: var(--ink);
+  box-shadow: 0 14px 35px #2a292833;
+}
+.notifications-popover h2 {
+  margin: 4px 6px 10px;
+  font-size: 1rem;
+}
+.notifications-popover button {
+  display: flex;
+  width: 100%;
+  padding: 10px;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  color: inherit;
+  text-align: left;
+  justify-content: space-between;
+  gap: 10px;
+}
+.notifications-popover button:hover,
+.notifications-popover button.unread {
+  background: var(--paper);
+}
+.notifications-popover button.unread span {
+  font-weight: 700;
+}
+.notifications-popover time {
+  color: var(--muted);
+  font-size: 0.7rem;
+  white-space: nowrap;
+}
 .local-login summary {
   list-style: none;
   cursor: pointer;

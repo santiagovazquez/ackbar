@@ -25,6 +25,22 @@ usersRouter.get("/local-auth", async (_req, res) => {
 usersRouter.get("/me", requireAuth, (req, res) => {
   res.json({ user: req.user });
 });
+usersRouter.get("/me/notifications", requireAuth, async (req, res) => {
+  const result = await db.execute({
+    sql: `SELECT id,type,listing_id,claim_id,message,read_at,created_at
+          FROM notifications WHERE user_id=? ORDER BY created_at DESC LIMIT 50`,
+    args: [req.user!.id],
+  });
+  res.json(result.rows);
+});
+usersRouter.patch("/me/notifications/:id/read", requireAuth, async (req, res) => {
+  const result = await db.execute({
+    sql: `UPDATE notifications SET read_at=COALESCE(read_at,?) WHERE id=? AND user_id=?`,
+    args: [new Date().toISOString(), String(req.params.id), req.user!.id],
+  });
+  if (!result.rowsAffected) return res.status(404).json({ error: "Notification not found" });
+  res.status(204).end();
+});
 const profileSchema = z.object({
   username: z
     .string()

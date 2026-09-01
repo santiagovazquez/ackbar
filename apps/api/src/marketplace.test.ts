@@ -343,6 +343,76 @@ describe("marketplace lifecycle", () => {
     expect(response.body.items[0]).toMatchObject({ name: "Luke Skywalker", quantity: 2 });
   });
 
+  it("notifies wanted-card matches and claims, and exposes wanted cards on profiles", async () => {
+    const wanted = await request
+      .post("/listings")
+      .set(authenticated("buyer-token"))
+      .send({
+        kind: "wanted",
+        items: [
+          {
+            cardId: "notification-test-card",
+            name: "Notification Test Card",
+            quantity: 1,
+            unitPriceCents: null,
+            playsetPriceCents: null,
+          },
+        ],
+      });
+    expect(wanted.status).toBe(201);
+
+    const sale = await request
+      .post("/listings")
+      .set(authenticated("seller-token"))
+      .send({
+        kind: "sale",
+        imageUrls: ["https://example.com/notification.jpg"],
+        items: [
+          {
+            cardId: "notification-test-card",
+            name: "Notification Test Card",
+            quantity: 1,
+            unitPriceCents: 500,
+            playsetPriceCents: null,
+          },
+        ],
+      });
+    expect(sale.status).toBe(201);
+
+    const buyerNotifications = await request
+      .get("/users/me/notifications")
+      .set(authenticated("buyer-token"));
+    const match = buyerNotifications.body.find(
+      (notification: { listing_id: string }) => notification.listing_id === sale.body.id,
+    );
+    expect(match).toMatchObject({ type: "wanted_match", read_at: null });
+
+    const profile = await request.get("/users/buyer");
+    expect(profile.body.listings).toEqual(
+      expect.arrayContaining([expect.objectContaining({ id: wanted.body.id, kind: "wanted" })]),
+    );
+
+    const claim = await request
+      .post("/claims")
+      .set(authenticated("buyer-token"))
+      .send({ itemId: sale.body.items[0].id, quantity: 1, pricingMode: "unit" });
+    expect(claim.status).toBe(201);
+    const sellerNotifications = await request
+      .get("/users/me/notifications")
+      .set(authenticated("seller-token"));
+    expect(sellerNotifications.body).toEqual(
+      expect.arrayContaining([expect.objectContaining({ type: "claim", claim_id: claim.body.id })]),
+    );
+
+    expect(
+      (
+        await request
+          .patch(`/users/me/notifications/${match.id}/read`)
+          .set(authenticated("buyer-token"))
+      ).status,
+    ).toBe(204);
+  });
+
   it("requires delivery and receipt before both parties can rate each other", async () => {
     const listing = await createPublication("sale", "seller-token");
     const first = await request

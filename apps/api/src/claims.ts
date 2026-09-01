@@ -58,6 +58,18 @@ claimsRouter.post("/batch", async (req, res) => {
         sql: `INSERT INTO claims (id, item_id, user_id, quantity, pricing_mode, amount_cents, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)`,
         args: [id, itemId, req.user!.id, quantity, pricingMode, amount, new Date().toISOString()],
       });
+      await transaction.execute({
+        sql: `INSERT INTO notifications (id,user_id,type,listing_id,claim_id,message,created_at)
+              VALUES (?,?,'claim',?,?,?,?)`,
+        args: [
+          crypto.randomUUID(),
+          String(item.owner_id),
+          String(item.listing_id),
+          id,
+          `${req.user!.name} hizo un claim por ${quantity} × ${String(item.card_name)}`,
+          new Date().toISOString(),
+        ],
+      });
       created.push({ id, amountCents: amount });
       listingIds.add(String(item.listing_id));
     }
@@ -87,7 +99,7 @@ claimsRouter.post("/", async (req, res) => {
   const transaction = await db.transaction("write");
   try {
     const itemResult = await transaction.execute({
-      sql: `SELECT i.*, l.owner_id, l.status, l.is_active, l.expires_at, i.quantity - COALESCE(SUM(CASE WHEN c.status != 'cancelled' THEN c.quantity ELSE 0 END),0) available FROM listing_items i JOIN listings l ON l.id=i.listing_id LEFT JOIN claims c ON c.item_id=i.id WHERE i.id=? GROUP BY i.id`,
+      sql: `SELECT i.*, l.id listing_id, l.owner_id, l.status, l.is_active, l.expires_at, i.quantity - COALESCE(SUM(CASE WHEN c.status != 'cancelled' THEN c.quantity ELSE 0 END),0) available FROM listing_items i JOIN listings l ON l.id=i.listing_id LEFT JOIN claims c ON c.item_id=i.id WHERE i.id=? GROUP BY i.id`,
       args: [itemId],
     });
     const item = itemResult.rows[0];
@@ -122,6 +134,18 @@ claimsRouter.post("/", async (req, res) => {
     await transaction.execute({
       sql: `INSERT INTO claims (id, item_id, user_id, quantity, pricing_mode, amount_cents, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)`,
       args: [id, itemId, req.user!.id, quantity, pricingMode, amount, new Date().toISOString()],
+    });
+    await transaction.execute({
+      sql: `INSERT INTO notifications (id,user_id,type,listing_id,claim_id,message,created_at)
+            VALUES (?,?,'claim',?,?,?,?)`,
+      args: [
+        crypto.randomUUID(),
+        String(item.owner_id),
+        String(item.listing_id),
+        id,
+        `${req.user!.name} hizo un claim por ${quantity} × ${String(item.card_name)}`,
+        new Date().toISOString(),
+      ],
     });
     await transaction.execute({
       sql: `UPDATE listings SET status='closed' WHERE id=(SELECT listing_id FROM listing_items WHERE id=?) AND NOT EXISTS (SELECT 1 FROM listing_items i LEFT JOIN claims c ON c.item_id=i.id AND c.status != 'cancelled' WHERE i.listing_id=(SELECT listing_id FROM listing_items WHERE id=?) GROUP BY i.id HAVING i.quantity > COALESCE(SUM(c.quantity),0))`,

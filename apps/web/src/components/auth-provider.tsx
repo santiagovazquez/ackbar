@@ -3,6 +3,7 @@ import { GoogleOAuthProvider, GoogleLogin } from "@react-oauth/google";
 import Image from "next/image";
 import { createContext, useContext, useEffect, useRef, useState } from "react";
 import { api } from "../lib/api";
+import { Notifications } from "./notifications";
 
 type AuthUser = { name: string; username: string | null; whatsapp: string | null };
 type Auth = { token: string | null; isLoading: boolean; signOut: () => void };
@@ -101,6 +102,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             {token && <a href="/vendo">Vendo</a>}
             {token && <a href="/busco">Busco</a>}
             {token && <a href="/dashboard">Mi panel</a>}
+            {token && <Notifications token={token} />}
             {isLoading ? null : token ? (
               <button className="link" onClick={signOut}>
                 Salir

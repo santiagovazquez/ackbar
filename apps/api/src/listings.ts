@@ -247,6 +247,35 @@ listingsRouter.post("/", requireAuth, requireCompletedProfile, async (req, res) 
     ]),
   ];
   await db.batch(statements, "write");
+  if (parsed.data.kind === "sale") {
+    const cardIds = [...new Set(storedItems.map((item) => item.cardId))];
+    const placeholders = cardIds.map(() => "?").join(",");
+    const matches = await db.execute({
+      sql: `SELECT l.owner_id, GROUP_CONCAT(DISTINCT i.card_name) card_names
+            FROM listings l
+            JOIN listing_items i ON i.listing_id=l.id
+            WHERE l.kind='wanted' AND l.status='active' AND l.is_active=1
+              AND l.expires_at>? AND l.owner_id!=? AND i.card_id IN (${placeholders})
+            GROUP BY l.owner_id`,
+      args: [now.toISOString(), req.user!.id, ...cardIds],
+    });
+    if (matches.rows.length) {
+      await db.batch(
+        matches.rows.map((match) => ({
+          sql: `INSERT INTO notifications (id,user_id,type,listing_id,message,created_at)
+                VALUES (?,?,'wanted_match',?,?,?)`,
+          args: [
+            crypto.randomUUID(),
+            String(match.owner_id),
+            id,
+            `Nueva publicación con ${String(match.card_names)}`,
+            now.toISOString(),
+          ],
+        })),
+        "write",
+      );
+    }
+  }
   res.status(201).json(await serializeListing(id));
 });
 listingsRouter.patch("/:id/deactivate", requireAuth, async (req, res) => {

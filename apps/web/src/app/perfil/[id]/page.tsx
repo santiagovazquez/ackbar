@@ -56,6 +56,8 @@ export default async function Profile({ params }: { params: Promise<{ id: string
       }),
     )
   ).filter((listing: Listing | null): listing is Listing => listing !== null);
+  const saleListings = listings.filter((listing) => listing.kind === "sale");
+  const wantedListings = listings.filter((listing) => listing.kind === "wanted");
   return (
     <main>
       <section className="panel dashboard-overview">
@@ -85,12 +87,20 @@ export default async function Profile({ params }: { params: Promise<{ id: string
           />
         </div>
       </section>
-      <h2>Publicaciones activas</h2>
+      <h2>Publicaciones de venta</h2>
       <div className="profile-publications">
-        {listings.length ? (
-          listings.map((listing) => <Publication listing={listing} key={listing.id} />)
+        {saleListings.length ? (
+          saleListings.map((listing) => <Publication listing={listing} key={listing.id} />)
         ) : (
-          <p className="muted">No tiene publicaciones activas.</p>
+          <p className="muted">No tiene publicaciones de venta activas.</p>
+        )}
+      </div>
+      <h2>Cartas que busca</h2>
+      <div className="profile-publications">
+        {wantedListings.length ? (
+          wantedListings.map((listing) => <Publication listing={listing} key={listing.id} />)
+        ) : (
+          <p className="muted">No está buscando cartas actualmente.</p>
         )}
       </div>
     </main>
