@@ -151,6 +151,35 @@ export default function Dashboard() {
   useEffect(() => {
     if (!isLoading && !token) router.replace("/");
   }, [isLoading, router, token]);
+  useEffect(() => {
+    const closeListingMenus = (except?: HTMLDetailsElement | null) => {
+      document.querySelectorAll<HTMLDetailsElement>(".dashboard-listing-menu[open]").forEach((menu) => {
+        if (menu !== except) menu.open = false;
+      });
+    };
+    const handlePointerDown = (event: PointerEvent) => {
+      const clickedMenu =
+        event.target instanceof Element
+          ? event.target.closest<HTMLDetailsElement>(".dashboard-listing-menu")
+          : null;
+      closeListingMenus(clickedMenu);
+    };
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== "Escape") return;
+      const openMenu = document.querySelector<HTMLDetailsElement>(
+        ".dashboard-listing-menu[open]",
+      );
+      if (!openMenu) return;
+      openMenu.open = false;
+      openMenu.querySelector<HTMLElement>("summary")?.focus();
+    };
+    document.addEventListener("pointerdown", handlePointerDown);
+    document.addEventListener("keydown", handleKeyDown);
+    return () => {
+      document.removeEventListener("pointerdown", handlePointerDown);
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, []);
   async function deliverClaims(claimIds: string[]) {
     if (!token) return;
     await api("/claims/batch/delivered", {
@@ -524,10 +553,19 @@ export default function Dashboard() {
                 <p>
                   {listing.claim_count} claims · {money(listing.total_cents)}
                 </p>
-                {listing.status !== "inactive" && (
-                  <button onClick={() => deactivateListing(listing.id)}>Desactivar</button>
-                )}
               </div>
+              {listing.status !== "inactive" && (
+                <details className="dashboard-listing-menu">
+                  <summary aria-label="Opciones de la publicación" title="Opciones">
+                    <span aria-hidden="true">•••</span>
+                  </summary>
+                  <div className="dashboard-listing-menu-popover">
+                    <button type="button" onClick={() => deactivateListing(listing.id)}>
+                      Desactivar
+                    </button>
+                  </div>
+                </details>
+              )}
             </article>
           ))
         )}
