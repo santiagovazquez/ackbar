@@ -1,0 +1,55 @@
+name: Deploy production
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: production
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.17.1
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm typecheck
+      - run: pnpm test
+      - run: pnpm build
+
+  deploy:
+    needs: verify
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    environment: production
+    env:
+      DEPLOY_HOST: alenta.me
+      DEPLOY_USER: deploy
+      DEPLOY_ROOT: /home/deploy/ackbar-web
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install SSH key
+        uses: shimataro/ssh-key-action@v2
+        with:
+          key: ${{ secrets.SSH_KEY }}
+          name: id_rsa
+          known_hosts: ${{ secrets.KNOWN_HOSTS }}
+      - name: Upload release
+        run: |
+          ssh "$DEPLOY_USER@$DEPLOY_HOST" "mkdir -p '$DEPLOY_ROOT/releases/$GITHUB_SHA'"
+          rsync -az --delete --exclude .git --exclude node_modules --exclude '*.env' --exclude '.env.*' ./ "$DEPLOY_USER@$DEPLOY_HOST:$DEPLOY_ROOT/releases/$GITHUB_SHA/"
+      - name: Activate release
+        run: ssh "$DEPLOY_USER@$DEPLOY_HOST" "DEPLOY_ROOT='$DEPLOY_ROOT' bash '$DEPLOY_ROOT/releases/$GITHUB_SHA/scripts/deploy-release.sh' '$GITHUB_SHA'"

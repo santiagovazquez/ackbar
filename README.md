@@ -53,6 +53,34 @@ Photo uploads use presigned S3 POSTs and go directly from the browser to the buc
 
 The API can use a persistent local SQLite file on a private server. Set `DATABASE_URL` to an absolute file URL such as `file:/var/lib/swu/marketplace.db`, or configure a remote libSQL database with `DATABASE_AUTH_TOKEN`.
 
+### EC2 deployment
+
+Pushes to `main` are verified and deployed to `/home/deploy/ackbar-web` as immutable releases. The
+workflow expects the GitHub Actions secrets `SSH_KEY` (the private key for `deploy@alenta.me`) and
+`KNOWN_HOSTS` (generate it with `ssh-keyscan -H alenta.me`). Protect the `production` GitHub
+environment if deployments should require approval.
+
+Before the first deployment, create `/home/deploy/ackbar-web/shared/api.env` and `web.env` on the
+server using [`deploy/env/api.env.example`](deploy/env/api.env.example) and
+[`deploy/env/web.env.example`](deploy/env/web.env.example). Keep them readable only by `deploy`
+(`chmod 600`). Values must use shell-compatible `KEY=value` syntax. Automated backup requires an
+absolute local SQLite `DATABASE_URL`; deployment refuses to migrate a remote libSQL database.
+
+Every deployment stops the app briefly, creates and checks an SQLite snapshot, migrates, switches
+the release, and restarts `ackbar-api` and `ackbar-web`. Failure restores the prior release and snapshot.
+Roll back code while preserving current data with:
+
+```sh
+ssh deploy@alenta.me 'bash /home/deploy/ackbar-web/current/scripts/rollback.sh'
+```
+
+To also undo the last migration, restore its pre-deployment snapshot. This discards database writes
+made since that deployment:
+
+```sh
+ssh deploy@alenta.me 'bash /home/deploy/ackbar-web/current/scripts/rollback.sh --restore-db'
+```
+
 Publications expire seven days after creation. Owners can deactivate them, which removes them from
 the marketplace and prevents new claims while preserving existing claims and reputation history.
 
