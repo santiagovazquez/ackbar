@@ -55,13 +55,13 @@ if [[ ! -s "$NVM_DIR/nvm.sh" ]]; then
 fi
 
 # Some NVM versions reference optional variables without guarding them, so
-# temporarily disable nounset while loading NVM and restore it immediately.
+# temporarily disable nounset while loading and running NVM.
 set +u
 # shellcheck source=/dev/null
 . "$NVM_DIR/nvm.sh"
-set -u
 nvm install 22
 nvm use 22
+set -u
 corepack enable
 corepack prepare pnpm@10.17.1 --activate
 cd "$release"
