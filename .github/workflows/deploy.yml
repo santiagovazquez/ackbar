@@ -52,4 +52,4 @@ jobs:
           ssh "$DEPLOY_USER@$DEPLOY_HOST" "mkdir -p '$DEPLOY_ROOT/releases/$GITHUB_SHA'"
           rsync -az --delete --exclude .git --exclude node_modules --exclude '*.env' --exclude '.env.*' ./ "$DEPLOY_USER@$DEPLOY_HOST:$DEPLOY_ROOT/releases/$GITHUB_SHA/"
       - name: Activate release
-        run: ssh "$DEPLOY_USER@$DEPLOY_HOST" "DEPLOY_ROOT='$DEPLOY_ROOT' bash '$DEPLOY_ROOT/releases/$GITHUB_SHA/scripts/deploy-release.sh' '$GITHUB_SHA'"
+        run: ssh -o ServerAliveInterval=30 -o ServerAliveCountMax=20 "$DEPLOY_USER@$DEPLOY_HOST" "DEPLOY_ROOT='$DEPLOY_ROOT' bash '$DEPLOY_ROOT/releases/$GITHUB_SHA/scripts/deploy-release.sh' '$GITHUB_SHA'"
