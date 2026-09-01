@@ -49,7 +49,7 @@ interface DashboardData {
   sales: Exchange[];
   ratings: RatingBreakdown;
 }
-type ListingsFilter = "active" | "all";
+type ListingsFilter = "active" | "inactive";
 const LISTINGS_PER_PAGE = 5;
 const listingStatusLabel = (status: string) =>
   ({
@@ -454,7 +454,9 @@ export default function Dashboard() {
   );
   const filteredListings = [...data.listings]
     .sort((left, right) => Date.parse(right.created_at) - Date.parse(left.created_at))
-    .filter((listing) => listingsFilter === "all" || listing.status === "active");
+    .filter((listing) =>
+      listingsFilter === "active" ? listing.status === "active" : listing.status !== "active",
+    );
   const listingsPageCount = Math.max(1, Math.ceil(filteredListings.length / LISTINGS_PER_PAGE));
   const currentListingsPage = Math.min(listingsPage, listingsPageCount);
   const paginatedListings = filteredListings.slice(
@@ -510,11 +512,11 @@ export default function Dashboard() {
           </button>
           <button
             type="button"
-            className={listingsFilter === "all" ? "active" : undefined}
-            aria-pressed={listingsFilter === "all"}
-            onClick={() => changeListingsFilter("all")}
+            className={listingsFilter === "inactive" ? "active" : undefined}
+            aria-pressed={listingsFilter === "inactive"}
+            onClick={() => changeListingsFilter("inactive")}
           >
-            Todas
+            Inactivas
           </button>
         </div>
       </div>
@@ -523,7 +525,7 @@ export default function Dashboard() {
           <p className="muted">
             {data.listings.length === 0
               ? "Todavía no publicaste."
-              : "No tenés publicaciones activas."}
+              : `No tenés publicaciones ${listingsFilter === "active" ? "activas" : "inactivas"}.`}
           </p>
         ) : (
           paginatedListings.map((listing) => (
