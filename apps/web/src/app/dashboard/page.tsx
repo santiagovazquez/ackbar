@@ -187,7 +187,13 @@ export default function Dashboard() {
     };
   }, []);
   async function deliverClaims(claimIds: string[]) {
-    if (!token) return;
+    if (
+      !token ||
+      !window.confirm(
+        "¿Confirmás que querés marcar todos los artículos de esta venta como entregados?",
+      )
+    )
+      return;
     await api("/claims/batch/delivered", {
       method: "PATCH",
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
