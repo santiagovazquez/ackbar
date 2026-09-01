@@ -14,7 +14,7 @@ const cardSchema = z.object({
 });
 const createSchema = z
   .object({
-    kind: z.literal("sale"),
+    kind: z.enum(["sale", "wanted"]),
     listingType: z.enum(["singles", "bulk"]).default("singles"),
     currency: z.enum(["ARS", "USD"]).default("ARS"),
     buyerPaysShipping: z.boolean().default(false),
@@ -23,7 +23,7 @@ const createSchema = z
     items: z.array(cardSchema),
   })
   .superRefine((value, context) => {
-    if (!value.imageUrls?.length)
+    if (value.kind === "sale" && !value.imageUrls?.length)
       context.addIssue({
         code: "custom",
         path: ["imageUrls"],
@@ -35,7 +35,7 @@ const createSchema = z
       context.addIssue({ code: "custom", path: ["items"], message: "Other requires items" });
     if (value.listingType === "bulk" && !value.imageUrls?.length)
       context.addIssue({ code: "custom", path: ["imageUrls"], message: "Bulk requires a photo" });
-    if (value.listingType === "singles")
+    if (value.kind === "sale" && value.listingType === "singles")
       value.items.forEach((item, index) => {
         if (item.unitPriceCents == null && item.playsetPriceCents == null)
           context.addIssue({
@@ -50,7 +50,7 @@ const createSchema = z
             message: "Playset pricing requires at least three units",
           });
       });
-    if (value.listingType === "bulk")
+    if (value.kind === "sale" && value.listingType === "bulk")
       value.items.forEach((item, index) => {
         if (!item.detail)
           context.addIssue({
@@ -64,6 +64,12 @@ const createSchema = z
             path: ["items", index, "unitPriceCents"],
             message: "Item price is required",
           });
+      });
+    if (value.kind === "wanted" && value.listingType !== "singles")
+      context.addIssue({
+        code: "custom",
+        path: ["listingType"],
+        message: "Wanted publications only support singles",
       });
   });
 

@@ -548,9 +548,14 @@ export default function Dashboard() {
             negative={data.ratings.buyer_negative}
           />
         </div>
-        <a className="button" href="/vendo">
-          Publicar venta
-        </a>
+        <div className="dashboard-publish-actions">
+          <a className="button" href="/vendo">
+            Publicar venta
+          </a>
+          <a className="button" href="/busco">
+            Publicar búsqueda
+          </a>
+        </div>
       </section>
       <div className="section-heading">
         <h2>Mis publicaciones</h2>

@@ -98,7 +98,7 @@ describe("marketplace lifecycle", () => {
   });
 
   it("reserves existing top-level pages before public usernames", async () => {
-    for (const username of ["vendo", "DASHBOARD", "perfil", "publi", "api"]) {
+    for (const username of ["vendo", "busco", "DASHBOARD", "perfil", "publi", "api"]) {
       const response = await request
         .put("/users/me/profile")
         .set(authenticated("seller-token"))
@@ -321,12 +321,26 @@ describe("marketplace lifecycle", () => {
     ).toBe(true);
   });
 
-  it("rejects wanted publications", async () => {
+  it("creates wanted publications with cards and quantities only", async () => {
     const response = await request
       .post("/listings")
       .set(authenticated("buyer-token"))
-      .send({ kind: "wanted", items: [] });
-    expect(response.status).toBe(400);
+      .send({
+        kind: "wanted",
+        items: [
+          {
+            cardId: "SOR_001",
+            name: "Luke Skywalker",
+            quantity: 2,
+            unitPriceCents: null,
+            playsetPriceCents: null,
+          },
+        ],
+      });
+    expect(response.status).toBe(201);
+    expect(response.body.kind).toBe("wanted");
+    expect(response.body.imageUrls).toEqual([]);
+    expect(response.body.items[0]).toMatchObject({ name: "Luke Skywalker", quantity: 2 });
   });
 
   it("requires delivery and receipt before both parties can rate each other", async () => {

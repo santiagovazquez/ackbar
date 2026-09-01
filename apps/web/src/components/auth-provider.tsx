@@ -99,6 +99,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           </a>
           <nav>
             {token && <a href="/vendo">Vendo</a>}
+            {token && <a href="/busco">Busco</a>}
             {token && <a href="/dashboard">Mi panel</a>}
             {isLoading ? null : token ? (
               <button className="link" onClick={signOut}>

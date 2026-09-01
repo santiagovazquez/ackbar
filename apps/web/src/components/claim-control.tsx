@@ -51,6 +51,32 @@ export function ClaimControl({ listing }: { listing: Listing }) {
   );
   const selectedQuantity = selectedItems.reduce((sum, item) => sum + (selection[item.id] ?? 0), 0);
 
+  if (listing.kind === "wanted") {
+    return (
+      <div className="listing-table-wrap">
+        <table className="listing-table">
+          <thead>
+            <tr>
+              <th>Cantidad</th>
+              <th>Carta</th>
+            </tr>
+          </thead>
+          <tbody>
+            {items.map((item) => (
+              <tr key={item.id}>
+                <td>{item.quantity}</td>
+                <td>
+                  <span className="card-name">{item.name}</span>
+                  {item.subtitle && <small className="card-subtitle">{item.subtitle}</small>}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    );
+  }
+
   function changeQuantity(item: ListingItem, delta: number) {
     setMessage("");
     setSelection((current) => {

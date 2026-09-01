@@ -1046,6 +1046,14 @@ form {
   flex: 0 0 auto;
   white-space: nowrap;
 }
+.dashboard-publish-actions {
+  display: flex;
+  flex: 0 0 auto;
+  gap: 8px;
+}
+.dashboard-publish-actions .button {
+  white-space: nowrap;
+}
 .dashboard-listing {
   position: relative;
   display: grid;
@@ -1148,7 +1156,11 @@ form {
   }
 }
 @media (max-width: 480px) {
-  .dashboard-overview > .button {
+  .dashboard-publish-actions {
+    width: 100%;
+    flex-direction: column;
+  }
+  .dashboard-publish-actions .button {
     width: 100%;
     text-align: center;
   }
@@ -1417,6 +1429,9 @@ textarea {
   grid-template-columns: minmax(230px, 1fr) minmax(160px, 0.7fr) 80px 120px 120px auto;
   gap: 9px;
   align-items: end;
+}
+.item-row.wanted-item-row {
+  grid-template-columns: minmax(230px, 1fr) 100px auto;
 }
 .article-row {
   display: grid;

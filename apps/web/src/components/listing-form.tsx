@@ -25,6 +25,7 @@ const emptyArticle = (): CardInput => ({
   playsetPriceCents: null,
 });
 export function ListingForm({ kind }: { kind: ListingKind }) {
+  const isWanted = kind === "wanted";
   const { token } = useAuth();
   const [listingType, setListingType] = useState<ListingType>("singles");
   const [currency, setCurrency] = useState<Currency>("ARS");
@@ -48,7 +49,7 @@ export function ListingForm({ kind }: { kind: ListingKind }) {
       setError("Iniciá sesión con Google para publicar.");
       return;
     }
-    if (imageUrls.length === 0) {
+    if (!isWanted && imageUrls.length === 0) {
       setError("Agregá una foto de las cartas para publicar la venta.");
       return;
     }
@@ -58,12 +59,12 @@ export function ListingForm({ kind }: { kind: ListingKind }) {
       const listing = await createListing(
         {
           kind,
-          listingType,
+          listingType: isWanted ? "singles" : listingType,
           currency,
-          buyerPaysShipping,
+          buyerPaysShipping: isWanted ? false : buyerPaysShipping,
           ...(description.trim() ? { description: description.trim() } : {}),
-          imageUrls: imageUrls.length ? imageUrls : undefined,
-          items: listingType === "singles" ? items : articles,
+          imageUrls: !isWanted && imageUrls.length ? imageUrls : undefined,
+          items: isWanted || listingType === "singles" ? items : articles,
         },
         token,
       );
@@ -128,155 +129,165 @@ export function ListingForm({ kind }: { kind: ListingKind }) {
   }
   return (
     <form onSubmit={submit}>
-      <div className="listing-options">
-        <fieldset className="toggle-field">
-          <legend>Tipo de publicación</legend>
-          <div className="toggle-group">
-            {(["singles", "bulk"] as const).map((value) => (
-              <button
-                key={value}
-                type="button"
-                className={listingType === value ? "active" : ""}
-                aria-pressed={listingType === value}
-                onClick={() => setListingType(value)}
-              >
-                {value === "singles" ? "Singles" : "Otro"}
-              </button>
-            ))}
-          </div>
-        </fieldset>
-        <fieldset className="toggle-field">
-          <legend>Moneda</legend>
-          <div className="toggle-group">
-            {(["ARS", "USD"] as const).map((value) => (
-              <button
-                key={value}
-                type="button"
-                className={currency === value ? "active" : ""}
-                aria-pressed={currency === value}
-                onClick={() => setCurrency(value)}
-              >
-                {value}
-              </button>
-            ))}
-          </div>
-        </fieldset>
-        <div className="shipping-field">
-          <span>Envíos</span>
-          <label className={`shipping-option${buyerPaysShipping ? " active" : ""}`}>
-            <input
-              className="visually-hidden"
-              type="checkbox"
-              checked={buyerPaysShipping}
-              onChange={(event) => setBuyerPaysShipping(event.target.checked)}
-            />
-            <span className="shipping-check" aria-hidden="true">
-              ✓
-            </span>
-            <span>A cargo del comprador</span>
-          </label>
-        </div>
-      </div>
-      <section className="image-upload-field" aria-labelledby="images-label">
-        <div className="field-heading">
-          <span id="images-label">Fotos</span>
-          <small>
-            {imageUrls.length}/{MAX_IMAGES}
-          </small>
-        </div>
-        <div
-          className={`image-dropzone${dragging ? " dragging" : ""}`}
-          onClick={() => fileInput.current?.click()}
-          onDragEnter={(event) => {
-            event.preventDefault();
-            setDragging(true);
-          }}
-          onDragOver={(event) => event.preventDefault()}
-          onDragLeave={(event) => {
-            if (!event.currentTarget.contains(event.relatedTarget as Node)) setDragging(false);
-          }}
-          onDrop={(event) => {
-            event.preventDefault();
-            setDragging(false);
-            void uploadImages(Array.from(event.dataTransfer.files));
-          }}
-          role="button"
-          tabIndex={0}
-          onKeyDown={(event) => {
-            if (event.key === "Enter" || event.key === " ") fileInput.current?.click();
-          }}
-        >
-          <svg aria-hidden="true" viewBox="0 0 24 24">
-            <path d="M12 16V4m0 0L7.5 8.5M12 4l4.5 4.5M5 14v4a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-4" />
-          </svg>
-          <strong>{dragging ? "Soltá las imágenes acá" : "Arrastrá tus imágenes acá"}</strong>
-          <span>o hacé clic para elegir varias</span>
-          <small>JPG, PNG o WebP · máximo 20 MB por imagen</small>
-        </div>
-        <input
-          ref={fileInput}
-          className="visually-hidden"
-          type="file"
-          multiple
-          accept="image/jpeg,image/png,image/webp"
-          onChange={(event) => {
-            const files = Array.from(event.target.files ?? []);
-            if (files.length) void uploadImages(files);
-            event.target.value = "";
-          }}
-        />
-        {uploading && <p className="upload-status">Subiendo imágenes…</p>}
-        {imageUrls.length > 0 && (
-          <div className="image-previews" aria-label="Imágenes subidas">
-            {imageUrls.map((url, index) => (
-              <div className="image-preview" key={url}>
-                <img src={url} alt={`Vista previa ${index + 1}`} />
-                {index === 0 && <span>Portada</span>}
+      {!isWanted && (
+        <div className="listing-options">
+          <fieldset className="toggle-field">
+            <legend>Tipo de publicación</legend>
+            <div className="toggle-group">
+              {(["singles", "bulk"] as const).map((value) => (
                 <button
+                  key={value}
                   type="button"
-                  aria-label={`Quitar imagen ${index + 1}`}
-                  onClick={() => setImageUrls((current) => current.filter((item) => item !== url))}
+                  className={listingType === value ? "active" : ""}
+                  aria-pressed={listingType === value}
+                  onClick={() => setListingType(value)}
                 >
-                  ×
+                  {value === "singles" ? "Singles" : "Otro"}
                 </button>
-              </div>
-            ))}
+              ))}
+            </div>
+          </fieldset>
+          <fieldset className="toggle-field">
+            <legend>Moneda</legend>
+            <div className="toggle-group">
+              {(["ARS", "USD"] as const).map((value) => (
+                <button
+                  key={value}
+                  type="button"
+                  className={currency === value ? "active" : ""}
+                  aria-pressed={currency === value}
+                  onClick={() => setCurrency(value)}
+                >
+                  {value}
+                </button>
+              ))}
+            </div>
+          </fieldset>
+          <div className="shipping-field">
+            <span>Envíos</span>
+            <label className={`shipping-option${buyerPaysShipping ? " active" : ""}`}>
+              <input
+                className="visually-hidden"
+                type="checkbox"
+                checked={buyerPaysShipping}
+                onChange={(event) => setBuyerPaysShipping(event.target.checked)}
+              />
+              <span className="shipping-check" aria-hidden="true">
+                ✓
+              </span>
+              <span>A cargo del comprador</span>
+            </label>
           </div>
-        )}
-      </section>
-      {listingType === "bulk" ? (
+        </div>
+      )}
+      {!isWanted && (
+        <section className="image-upload-field" aria-labelledby="images-label">
+          <div className="field-heading">
+            <span id="images-label">Fotos</span>
+            <small>
+              {imageUrls.length}/{MAX_IMAGES}
+            </small>
+          </div>
+          <div
+            className={`image-dropzone${dragging ? " dragging" : ""}`}
+            onClick={() => fileInput.current?.click()}
+            onDragEnter={(event) => {
+              event.preventDefault();
+              setDragging(true);
+            }}
+            onDragOver={(event) => event.preventDefault()}
+            onDragLeave={(event) => {
+              if (!event.currentTarget.contains(event.relatedTarget as Node)) setDragging(false);
+            }}
+            onDrop={(event) => {
+              event.preventDefault();
+              setDragging(false);
+              void uploadImages(Array.from(event.dataTransfer.files));
+            }}
+            role="button"
+            tabIndex={0}
+            onKeyDown={(event) => {
+              if (event.key === "Enter" || event.key === " ") fileInput.current?.click();
+            }}
+          >
+            <svg aria-hidden="true" viewBox="0 0 24 24">
+              <path d="M12 16V4m0 0L7.5 8.5M12 4l4.5 4.5M5 14v4a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-4" />
+            </svg>
+            <strong>{dragging ? "Soltá las imágenes acá" : "Arrastrá tus imágenes acá"}</strong>
+            <span>o hacé clic para elegir varias</span>
+            <small>JPG, PNG o WebP · máximo 20 MB por imagen</small>
+          </div>
+          <input
+            ref={fileInput}
+            className="visually-hidden"
+            type="file"
+            multiple
+            accept="image/jpeg,image/png,image/webp"
+            onChange={(event) => {
+              const files = Array.from(event.target.files ?? []);
+              if (files.length) void uploadImages(files);
+              event.target.value = "";
+            }}
+          />
+          {uploading && <p className="upload-status">Subiendo imágenes…</p>}
+          {imageUrls.length > 0 && (
+            <div className="image-previews" aria-label="Imágenes subidas">
+              {imageUrls.map((url, index) => (
+                <div className="image-preview" key={url}>
+                  <img src={url} alt={`Vista previa ${index + 1}`} />
+                  {index === 0 && <span>Portada</span>}
+                  <button
+                    type="button"
+                    aria-label={`Quitar imagen ${index + 1}`}
+                    onClick={() =>
+                      setImageUrls((current) => current.filter((item) => item !== url))
+                    }
+                  >
+                    ×
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+        </section>
+      )}
+      {!isWanted && listingType === "bulk" ? (
         <>
           <h2>Artículos</h2>
           {articles.map((article, index) => (
             <div className="article-row" key={article.cardId}>
-              <label>
-                Detalle
-                <input
-                  type="text"
-                  maxLength={100}
-                  required
-                  value={article.detail ?? ""}
-                  placeholder="Colección, accesorios u otro artículo"
-                  onChange={(e) => updateArticle(index, { detail: e.target.value })}
-                />
-              </label>
-              <label>
-                Precio
-                <input
-                  className="number-without-stepper"
-                  type="number"
-                  min="0"
-                  step="0.01"
-                  required
-                  onChange={(e) =>
-                    updateArticle(index, {
-                      unitPriceCents: e.target.value
-                        ? Math.round(Number(e.target.value) * 100)
-                        : null,
-                    })
-                  }
-                />
-              </label>
+              {!isWanted && (
+                <label>
+                  Detalle
+                  <input
+                    type="text"
+                    maxLength={100}
+                    required
+                    value={article.detail ?? ""}
+                    placeholder="Colección, accesorios u otro artículo"
+                    onChange={(e) => updateArticle(index, { detail: e.target.value })}
+                  />
+                </label>
+              )}
+              {!isWanted && (
+                <label>
+                  Precio
+                  <input
+                    className="number-without-stepper"
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    required
+                    onChange={(e) =>
+                      updateArticle(index, {
+                        unitPriceCents: e.target.value
+                          ? Math.round(Number(e.target.value) * 100)
+                          : null,
+                      })
+                    }
+                  />
+                </label>
+              )}
               {articles.length > 1 && (
                 <button
                   type="button"
@@ -296,7 +307,7 @@ export function ListingForm({ kind }: { kind: ListingKind }) {
         <>
           <h2>Cartas</h2>
           {items.map((item, index) => (
-            <div className="item-row" key={index}>
+            <div className={`item-row${isWanted ? " wanted-item-row" : ""}`} key={index}>
               <label>
                 Carta
                 <CardAutocomplete
@@ -304,18 +315,20 @@ export function ListingForm({ kind }: { kind: ListingKind }) {
                   onSelect={(card) => update(index, { name: card.name, cardId: card.id })}
                 />
               </label>
-              <label>
-                <span>
-                  Detalle <span className="optional-label">Opcional</span>
-                </span>
-                <input
-                  type="text"
-                  maxLength={100}
-                  value={item.detail ?? ""}
-                  placeholder="HS, Foil, Prestige…"
-                  onChange={(e) => update(index, { detail: e.target.value })}
-                />
-              </label>
+              {!isWanted && (
+                <label>
+                  <span>
+                    Detalle <span className="optional-label">Opcional</span>
+                  </span>
+                  <input
+                    type="text"
+                    maxLength={100}
+                    value={item.detail ?? ""}
+                    placeholder="HS, Foil, Prestige…"
+                    onChange={(e) => update(index, { detail: e.target.value })}
+                  />
+                </label>
+              )}
               <label>
                 Cantidad
                 <input
@@ -325,39 +338,43 @@ export function ListingForm({ kind }: { kind: ListingKind }) {
                   onChange={(e) => update(index, { quantity: Number(e.target.value) })}
                 />
               </label>
-              <label>
-                Precio unitario
-                <input
-                  className="number-without-stepper"
-                  type="number"
-                  min="0"
-                  step="0.01"
-                  onChange={(e) =>
-                    update(index, {
-                      unitPriceCents: e.target.value
-                        ? Math.round(Number(e.target.value) * 100)
-                        : null,
-                    })
-                  }
-                />
-              </label>
-              <label>
-                Precio playset
-                <input
-                  className="number-without-stepper"
-                  type="number"
-                  min="0"
-                  step="0.01"
-                  disabled={item.quantity < 3}
-                  onChange={(e) =>
-                    update(index, {
-                      playsetPriceCents: e.target.value
-                        ? Math.round(Number(e.target.value) * 100)
-                        : null,
-                    })
-                  }
-                />
-              </label>
+              {!isWanted && (
+                <label>
+                  Precio unitario
+                  <input
+                    className="number-without-stepper"
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    onChange={(e) =>
+                      update(index, {
+                        unitPriceCents: e.target.value
+                          ? Math.round(Number(e.target.value) * 100)
+                          : null,
+                      })
+                    }
+                  />
+                </label>
+              )}
+              {!isWanted && (
+                <label>
+                  Precio playset
+                  <input
+                    className="number-without-stepper"
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    disabled={item.quantity < 3}
+                    onChange={(e) =>
+                      update(index, {
+                        playsetPriceCents: e.target.value
+                          ? Math.round(Number(e.target.value) * 100)
+                          : null,
+                      })
+                    }
+                  />
+                </label>
+              )}
               {items.length > 1 && (
                 <button type="button" onClick={() => setItems(items.filter((_, i) => i !== index))}>
                   ×
@@ -370,20 +387,24 @@ export function ListingForm({ kind }: { kind: ListingKind }) {
           </button>
         </>
       )}
-      <label>
-        <span>
-          Descripción <span className="optional-label">Opcional</span>
-        </span>
-        <textarea
-          rows={4}
-          maxLength={500}
-          value={description}
-          onChange={(e) => setDescription(e.target.value)}
-          placeholder="Descripción, condiciones de venta, entrega, instrucciones, etc."
-        />
-      </label>
+      {!isWanted && (
+        <label>
+          <span>
+            Descripción <span className="optional-label">Opcional</span>
+          </span>
+          <textarea
+            rows={4}
+            maxLength={500}
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            placeholder="Descripción, condiciones de venta, entrega, instrucciones, etc."
+          />
+        </label>
+      )}
       {error && <p className="error">{error}</p>}
-      <button disabled={busy || uploading}>{busy ? "Publicando…" : "Publicar"}</button>
+      <button disabled={busy || uploading}>
+        {busy ? "Publicando…" : isWanted ? "Publicar búsqueda" : "Publicar"}
+      </button>
     </form>
   );
 }
