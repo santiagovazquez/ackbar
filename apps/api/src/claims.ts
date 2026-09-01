@@ -13,17 +13,36 @@ const claimSchema = z.object({
 });
 
 claimsRouter.get("/listing/:listingId", async (req, res) => {
+  const listing = await db.execute({
+    sql: `SELECT owner_id FROM listings WHERE id=?`,
+    args: [String(req.params.listingId)],
+  });
+  if (!listing.rows[0]) return res.status(404).json({ error: "Publication not found" });
+  const isOwner = listing.rows[0].owner_id === req.user!.id;
   const result = await db.execute({
     sql: `SELECT c.item_id itemId,
                  SUM(c.quantity) quantity,
-                 SUM(c.amount_cents) amountCents
+                 SUM(c.amount_cents) amountCents,
+                 u.id claimantId,
+                 u.name claimantName,
+                 u.username claimantUsername
           FROM claims c
           JOIN listing_items i ON i.id=c.item_id
-          WHERE i.listing_id=? AND c.user_id=? AND c.status != 'cancelled'
-          GROUP BY c.item_id`,
-    args: [String(req.params.listingId), req.user!.id],
+          JOIN users u ON u.id=c.user_id
+          WHERE i.listing_id=? AND (? OR c.user_id=?) AND c.status != 'cancelled'
+          GROUP BY c.item_id, c.user_id
+          ORDER BY MIN(c.created_at)`,
+    args: [String(req.params.listingId), isOwner ? 1 : 0, req.user!.id],
   });
-  res.json(result.rows);
+  res.json(
+    isOwner
+      ? result.rows
+      : result.rows.map(({ itemId, quantity, amountCents }) => ({
+          itemId,
+          quantity,
+          amountCents,
+        })),
+  );
 });
 
 claimsRouter.post("/batch", async (req, res) => {

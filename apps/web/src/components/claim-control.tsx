@@ -6,7 +6,14 @@ import { api } from "../lib/api";
 import { useAuth } from "./auth-provider";
 
 type Selection = Record<string, number>;
-type ClaimedItem = { itemId: string; quantity: number; amountCents: number };
+type ClaimedItem = {
+  itemId: string;
+  quantity: number;
+  amountCents: number;
+  claimantId?: string;
+  claimantName?: string;
+  claimantUsername?: string | null;
+};
 const money = (cents: number | null, currency: Listing["currency"]) =>
   cents == null
     ? "—"
@@ -21,10 +28,16 @@ function totalFor(item: ListingItem, quantity: number) {
 }
 
 export function ClaimControl({ listing }: { listing: Listing }) {
-  const { token } = useAuth();
+  const { token, user } = useAuth();
+  const isOwner = user?.id === listing.seller.id;
+  const showClaimActions = !token || Boolean(user && !isOwner);
   const [items, setItems] = useState(listing.items);
   const [selection, setSelection] = useState<Selection>({});
-  const [claimed, setClaimed] = useState<Record<string, ClaimedItem>>({});
+  const [claims, setClaims] = useState<ClaimedItem[]>([]);
+  const claimed = useMemo(
+    () => Object.fromEntries(claims.map((claim) => [claim.itemId, claim])),
+    [claims],
+  );
   const [message, setMessage] = useState("");
   const [busy, setBusy] = useState(false);
   const selectedItems = useMemo(
@@ -33,14 +46,14 @@ export function ClaimControl({ listing }: { listing: Listing }) {
   );
   const loadClaimed = useCallback(async () => {
     if (!token) {
-      setClaimed({});
+      setClaims([]);
       return;
     }
     const rows = await api<ClaimedItem[]>(`/claims/listing/${listing.id}`, {
       headers: { Authorization: `Bearer ${token}` },
       cache: "no-store",
     });
-    setClaimed(Object.fromEntries(rows.map((row) => [row.itemId, row])));
+    setClaims(rows);
   }, [listing.id, token]);
   useEffect(() => {
     void loadClaimed().catch(() => setMessage("No pudimos cargar tus claims anteriores."));
@@ -123,18 +136,21 @@ export function ClaimControl({ listing }: { listing: Listing }) {
           availableQuantity: item.availableQuantity - (confirmed[item.id] ?? 0),
         })),
       );
-      setClaimed((current) => {
-        const next = { ...current };
+      setClaims((current) => {
+        const next = Object.fromEntries(current.map((claim) => [claim.itemId, claim]));
         selectedItems.forEach((item) => {
-          const previous = current[item.id];
+          const previous = next[item.id];
           const quantity = confirmed[item.id] ?? 0;
           next[item.id] = {
             itemId: item.id,
             quantity: (previous?.quantity ?? 0) + quantity,
             amountCents: (previous?.amountCents ?? 0) + totalFor(item, quantity),
+            claimantId: user?.id ?? "",
+            claimantName: user?.name ?? "",
+            claimantUsername: user?.username ?? null,
           };
         });
-        return next;
+        return Object.values(next);
       });
       setSelection({});
       setMessage("¡Listo! Tus artículos quedaron claimeados y reservados.");
@@ -145,7 +161,8 @@ export function ClaimControl({ listing }: { listing: Listing }) {
     }
   }
   const actions = (item: ListingItem) => {
-    if (listing.status !== "active" || item.availableQuantity === 0) return null;
+    if (!showClaimActions || listing.status !== "active" || item.availableQuantity === 0)
+      return null;
 
     const quantity = selection[item.id] ?? 0;
     return (
@@ -197,13 +214,13 @@ export function ClaimControl({ listing }: { listing: Listing }) {
                 <th>Detalle</th>
                 <th>Precio unitario</th>
                 <th>Precio playset</th>
-                <th>A claimear</th>
+                {showClaimActions && <th>A claimear</th>}
               </tr>
             ) : (
               <tr>
                 <th>Detalle</th>
                 <th>Precio</th>
-                <th>A claimear</th>
+                {showClaimActions && <th>A claimear</th>}
               </tr>
             )}
           </thead>
@@ -224,7 +241,7 @@ export function ClaimControl({ listing }: { listing: Listing }) {
                   <td>
                     <span className="card-name">{item.name}</span>
                     {item.subtitle && <small className="card-subtitle">{item.subtitle}</small>}
-                    {claimed[item.id] && (
+                    {showClaimActions && claimed[item.id] && (
                       <small className="claimed-item-mark">
                         ✓ Claimeaste {claimed[item.id]!.quantity}
                       </small>
@@ -233,7 +250,7 @@ export function ClaimControl({ listing }: { listing: Listing }) {
                   <td>{item.detail ?? "—"}</td>
                   <td>{money(item.unitPriceCents, listing.currency)}</td>
                   <td>{money(item.playsetPriceCents, listing.currency)}</td>
-                  <td>{actions(item)}</td>
+                  {showClaimActions && <td>{actions(item)}</td>}
                 </tr>
               ) : (
                 <tr
@@ -248,21 +265,21 @@ export function ClaimControl({ listing }: { listing: Listing }) {
                 >
                   <td>
                     {item.detail ?? item.name}
-                    {claimed[item.id] && (
+                    {showClaimActions && claimed[item.id] && (
                       <small className="claimed-item-mark">
                         ✓ Claimeaste {claimed[item.id]!.quantity}
                       </small>
                     )}
                   </td>
                   <td>{money(item.unitPriceCents, listing.currency)}</td>
-                  <td>{actions(item)}</td>
+                  {showClaimActions && <td>{actions(item)}</td>}
                 </tr>
               ),
             )}
           </tbody>
         </table>
       </div>
-      {selectedItems.length > 0 && (
+      {showClaimActions && selectedItems.length > 0 && (
         <aside className="claim-summary" aria-label="Claims a confirmar">
           <p className="claim-summary-count">
             {selectedQuantity} {selectedQuantity === 1 ? "carta" : "cartas"} en tu claim
@@ -287,20 +304,38 @@ export function ClaimControl({ listing }: { listing: Listing }) {
           {message && <small role="status">{message}</small>}
         </aside>
       )}
-      {Object.keys(claimed).length > 0 && (
-        <aside className="claimed-summary" aria-label="Tus claims en esta publicación">
-          <strong>Tus claims en esta publicación</strong>
+      {claims.length > 0 && (
+        <aside
+          className="claimed-summary"
+          aria-label={
+            isOwner ? "Claims realizados en esta publicación" : "Tus claims en esta publicación"
+          }
+        >
+          <strong>
+            {isOwner ? "Claims realizados en esta publicación" : "Tus claims en esta publicación"}
+          </strong>
           <ul>
-            {items
-              .filter((item) => claimed[item.id])
-              .map((item) => (
-                <li key={item.id}>
+            {claims.map((claim) => {
+              const item = items.find((candidate) => candidate.id === claim.itemId);
+              return (
+                <li key={`${claim.itemId}:${claim.claimantId ?? "self"}`}>
                   <span>
-                    {claimed[item.id]!.quantity}× {item.detail ?? item.name}
+                    {claim.quantity}× {item?.detail ?? item?.name}
+                    {isOwner && claim.claimantName && (
+                      <>
+                        {" · "}
+                        {claim.claimantUsername ? (
+                          <a href={`/${claim.claimantUsername}`}>{claim.claimantName}</a>
+                        ) : (
+                          claim.claimantName
+                        )}
+                      </>
+                    )}
                   </span>
-                  <strong>{money(claimed[item.id]!.amountCents, listing.currency)}</strong>
+                  <strong>{money(claim.amountCents, listing.currency)}</strong>
                 </li>
-              ))}
+              );
+            })}
           </ul>
         </aside>
       )}

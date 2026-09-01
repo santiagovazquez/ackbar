@@ -6,14 +6,25 @@ import { api } from "../lib/api";
 import { Notifications } from "./notifications";
 
 type AuthUser = {
+  id: string;
   name: string;
   avatarUrl: string | null;
   username: string | null;
   whatsapp: string | null;
 };
-type Auth = { token: string | null; isLoading: boolean; signOut: () => void };
+type Auth = {
+  token: string | null;
+  user: AuthUser | null;
+  isLoading: boolean;
+  signOut: () => void;
+};
 type LocalUser = { id: string; name: string; email: string; token: string };
-const AuthContext = createContext<Auth>({ token: null, isLoading: true, signOut: () => undefined });
+const AuthContext = createContext<Auth>({
+  token: null,
+  user: null,
+  isLoading: true,
+  signOut: () => undefined,
+});
 export const useAuth = () => useContext(AuthContext);
 
 function tokenExpiration(token: string) {
@@ -102,7 +113,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
   return (
     <GoogleOAuthProvider clientId={process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID ?? ""}>
-      <AuthContext.Provider value={{ token, isLoading, signOut }}>
+      <AuthContext.Provider value={{ token, user, isLoading, signOut }}>
         <header className="topbar">
           <a className="brand" href="/">
             <Image

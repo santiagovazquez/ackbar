@@ -216,7 +216,16 @@ describe("marketplace lifecycle", () => {
     const sellerClaims = await request
       .get(`/claims/listing/${listing.id}`)
       .set(authenticated("seller-token"));
-    expect(sellerClaims.body).toEqual([]);
+    expect(sellerClaims.body).toEqual([
+      {
+        itemId: listing.items[0].id,
+        quantity: 3,
+        amountCents: 2500,
+        claimantId: "usr_buyer",
+        claimantName: "Buyer",
+        claimantUsername: "buyer",
+      },
+    ]);
 
     const closed = await request.get(`/listings/${listing.id}`);
     expect(closed.status, JSON.stringify(closed.body)).toBe(200);
