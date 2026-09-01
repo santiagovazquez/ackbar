@@ -79,7 +79,10 @@ export function ClaimControl({ listing }: { listing: Listing }) {
               <tr key={item.id}>
                 <td>{item.quantity}</td>
                 <td>
-                  <span className="card-name">{item.name}</span>
+                  <span className="card-name">
+                    {item.name}
+                    {item.setCode && <small className="card-set">{item.setCode}</small>}
+                  </span>
                   {item.subtitle && <small className="card-subtitle">{item.subtitle}</small>}
                 </td>
               </tr>
@@ -239,7 +242,10 @@ export function ClaimControl({ listing }: { listing: Listing }) {
                 >
                   <td>{item.availableQuantity}</td>
                   <td>
-                    <span className="card-name">{item.name}</span>
+                    <span className="card-name">
+                      {item.name}
+                      {item.setCode && <small className="card-set">{item.setCode}</small>}
+                    </span>
                     {item.subtitle && <small className="card-subtitle">{item.subtitle}</small>}
                     {showClaimActions && claimed[item.id] && (
                       <small className="claimed-item-mark">

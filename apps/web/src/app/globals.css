@@ -566,10 +566,12 @@ main {
   font-weight: 750;
 }
 .card-name,
-.card-detail {
+.card-detail,
+.card-subtitle {
   display: block;
 }
-.card-detail {
+.card-detail,
+.card-subtitle {
   margin-top: 2px;
   color: var(--muted);
   font-size: 0.78rem;
