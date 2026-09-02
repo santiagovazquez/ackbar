@@ -1,4 +1,4 @@
-# SWU Marketplace
+# Ackbar
 
 A community marketplace for buying, selling, and claiming Star Wars Unlimited singles.
 

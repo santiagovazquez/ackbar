@@ -8,21 +8,24 @@ import { useAuth } from "./auth-provider";
 type ShareListingButtonProps = {
   listingId: string;
   title: string;
+  itemNames: string[];
   variant?: "menu" | "round";
 };
 
 export function ShareListingButton({
   listingId,
   title,
+  itemNames,
   variant = "menu",
 }: ShareListingButtonProps) {
   const [message, setMessage] = useState("");
 
   async function share() {
     const url = `${window.location.origin}/publi/${listingId}`;
+    const text = `Mirá esta publicación en Ackb.ar: ${itemNames.join(", ")}`;
     const shareData = {
-      title: `${title} · SWU Mercado`,
-      text: `Mirá esta publicación en SWU Mercado: ${title}`,
+      title: `${title} · Ackbar`,
+      text,
       url,
     };
 
@@ -30,7 +33,7 @@ export function ShareListingButton({
       if (navigator.share) {
         await navigator.share(shareData);
       } else {
-        await navigator.clipboard.writeText(url);
+        await navigator.clipboard.writeText(`${text}\n${url}`);
         setMessage("Enlace copiado");
         window.setTimeout(() => setMessage(""), 2500);
       }
@@ -66,9 +69,12 @@ export function OwnerShareListingButton({
   ownerId,
   listingId,
   title,
+  itemNames,
 }: Omit<ShareListingButtonProps, "variant"> & { ownerId: string }) {
   const { user } = useAuth();
   if (user?.id !== ownerId) return null;
 
-  return <ShareListingButton listingId={listingId} title={title} variant="round" />;
+  return (
+    <ShareListingButton listingId={listingId} title={title} itemNames={itemNames} variant="round" />
+  );
 }

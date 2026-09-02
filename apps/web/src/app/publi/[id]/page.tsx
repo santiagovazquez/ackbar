@@ -12,11 +12,11 @@ export async function generateMetadata({
   try {
     const listing = await getListing(id);
     const name = listing.listingType === "bulk" ? "Otros artículos" : listing.items[0]?.name;
-    const title = name ?? "Publicación en SWU Mercado";
+    const title = name ?? "Publicación en Ackbar";
     const description = listingPreviewDescription(listing);
     const images = listing.imageUrls.length ? [{ url: listing.imageUrls[0]! }] : undefined;
     return {
-      title: `${name ?? "Publicación"} · SWU Mercado`,
+      title: `${name ?? "Publicación"} · Ackbar`,
       description,
       openGraph: {
         title,

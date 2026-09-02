@@ -6,15 +6,16 @@ import { OwnerShareListingButton } from "./share-listing-button";
 
 export function Publication({ listing }: { listing: Listing }) {
   const title =
-    listing.listingType === "bulk"
-      ? "Otros artículos"
-      : listing.items[0]?.name ?? "Publicación";
+    listing.listingType === "bulk" ? "Otros artículos" : (listing.items[0]?.name ?? "Publicación");
   return (
     <article className="publication">
       <OwnerShareListingButton
         ownerId={listing.seller.id}
         listingId={listing.id}
         title={title}
+        itemNames={listing.items.map((item) =>
+          listing.listingType === "bulk" ? (item.detail ?? item.name) : item.name,
+        )}
       />
       {listing.imageUrls.length > 0 && <ImageCarousel urls={listing.imageUrls} />}
       {listing.buyerPaysShipping && (

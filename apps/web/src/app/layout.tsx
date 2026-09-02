@@ -3,7 +3,7 @@ import { AuthProvider } from "../components/auth-provider";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "SWU Mercado",
+  title: "Ackbar",
   description: "Compra y venta de singles de Star Wars Unlimited",
 };
 export default function RootLayout({ children }: { children: React.ReactNode }) {

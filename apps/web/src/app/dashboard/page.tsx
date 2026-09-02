@@ -137,13 +137,10 @@ export default function Dashboard() {
   const { token, isLoading } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
-  const view = pathname === "/entregas" ? "deliveries" : pathname === "/mis-claims" ? "claims" : "dashboard";
+  const view =
+    pathname === "/entregas" ? "deliveries" : pathname === "/mis-claims" ? "claims" : "dashboard";
   const pageTitle =
-    view === "deliveries"
-      ? "Entregas"
-      : view === "claims"
-        ? "Mis claims"
-        : "Mis publicaciones";
+    view === "deliveries" ? "Entregas" : view === "claims" ? "Mis claims" : "Mis publicaciones";
   const [data, setData] = useState<DashboardData | null>(null);
   const [error, setError] = useState("");
   const [listingsFilter, setListingsFilter] = useState<ListingsFilter>("active");
@@ -546,169 +543,175 @@ export default function Dashboard() {
     <main>
       {view === "dashboard" && (
         <>
-      <section className="panel dashboard-overview">
-        <div className="dashboard-overview-user">
-          <h1>Hola, {data.user.name}</h1>
-          <div className="dashboard-overview-stats" aria-label="Resumen de actividad">
-            <span>
-              <strong>{data.listings.length}</strong> publicaciones
-            </span>
-            <span>
-              <strong>{data.sales.length}</strong> ventas
-            </span>
-          </div>
-        </div>
-        <div className="dashboard-reputations">
-          <ReputationSummary
-            label="Como vendedor"
-            positive={data.ratings.seller_positive}
-            neutral={data.ratings.seller_neutral}
-            negative={data.ratings.seller_negative}
-          />
-          <ReputationSummary
-            label="Como comprador"
-            positive={data.ratings.buyer_positive}
-            neutral={data.ratings.buyer_neutral}
-            negative={data.ratings.buyer_negative}
-          />
-        </div>
-        <div className="dashboard-publish-actions">
-          <a className="button" href="/vendo">
-            Publicar venta
-          </a>
-          <a className="button" href="/busco">
-            Publicar búsqueda
-          </a>
-        </div>
-      </section>
-      <div className="section-heading">
-        <h2>Mis publicaciones</h2>
-        <div className="toggle-group" role="group" aria-label="Filtrar publicaciones">
-          <button
-            type="button"
-            className={listingsFilter === "active" ? "active" : undefined}
-            aria-pressed={listingsFilter === "active"}
-            onClick={() => changeListingsFilter("active")}
-          >
-            Activas
-          </button>
-          <button
-            type="button"
-            className={listingsFilter === "inactive" ? "active" : undefined}
-            aria-pressed={listingsFilter === "inactive"}
-            onClick={() => changeListingsFilter("inactive")}
-          >
-            Inactivas
-          </button>
-        </div>
-      </div>
-      <div className="stack">
-        {paginatedListings.length === 0 ? (
-          <p className="muted">
-            {data.listings.length === 0
-              ? "Todavía no publicaste."
-              : `No tenés publicaciones ${listingsFilter === "active" ? "activas" : "inactivas"}.`}
-          </p>
-        ) : (
-          paginatedListings.map((listing) => (
-            <article
-              className={`panel dashboard-listing${listing.image_url ? "" : " dashboard-listing-no-image"}`}
-              key={listing.id}
-            >
-              {listing.image_url && (
-                <a href={`/publi/${listing.id}`} className="dashboard-listing-image-link">
-                  <img
-                    className="dashboard-listing-image"
-                    src={listing.image_url}
-                    alt={
-                      listing.card_names
-                        ? `Foto de ${listing.card_names}`
-                        : "Foto de la publicación"
-                    }
-                  />
-                </a>
-              )}
-              <div className="dashboard-listing-content">
-                <span className="status">{listingStatusLabel(listing.status)}</span>
-                <h3>
-                  <a href={`/publi/${listing.id}`}>{listing.card_names ?? "Bulk"}</a>
-                </h3>
-                {listing.description && <p>{listing.description}</p>}
-                <p>
-                  {listing.claim_count} claims · {money(listing.total_cents)}
-                </p>
+          <section className="panel dashboard-overview">
+            <div className="dashboard-overview-user">
+              <h1>Hola, {data.user.name}</h1>
+              <div className="dashboard-overview-stats" aria-label="Resumen de actividad">
+                <span>
+                  <strong>{data.listings.length}</strong> publicaciones
+                </span>
+                <span>
+                  <strong>{data.sales.length}</strong> ventas
+                </span>
               </div>
-              {listing.status !== "inactive" && (
-                <details className="dashboard-listing-menu">
-                  <summary aria-label="Opciones de la publicación" title="Opciones">
-                    <FontAwesomeIcon icon={faEllipsis} aria-hidden="true" />
-                  </summary>
-                  <div className="dashboard-listing-menu-popover">
-                    <ShareListingButton
-                      listingId={listing.id}
-                      title={listing.card_names ?? "Otros artículos"}
-                    />
-                    <button
-                      type="button"
-                      className="danger"
-                      onClick={() => deactivateListing(listing.id)}
-                    >
-                      Desactivar
-                    </button>
+            </div>
+            <div className="dashboard-reputations">
+              <ReputationSummary
+                label="Como vendedor"
+                positive={data.ratings.seller_positive}
+                neutral={data.ratings.seller_neutral}
+                negative={data.ratings.seller_negative}
+              />
+              <ReputationSummary
+                label="Como comprador"
+                positive={data.ratings.buyer_positive}
+                neutral={data.ratings.buyer_neutral}
+                negative={data.ratings.buyer_negative}
+              />
+            </div>
+            <div className="dashboard-publish-actions">
+              <a className="button" href="/vendo">
+                Publicar venta
+              </a>
+              <a className="button" href="/busco">
+                Publicar búsqueda
+              </a>
+            </div>
+          </section>
+          <div className="section-heading">
+            <h2>Mis publicaciones</h2>
+            <div className="toggle-group" role="group" aria-label="Filtrar publicaciones">
+              <button
+                type="button"
+                className={listingsFilter === "active" ? "active" : undefined}
+                aria-pressed={listingsFilter === "active"}
+                onClick={() => changeListingsFilter("active")}
+              >
+                Activas
+              </button>
+              <button
+                type="button"
+                className={listingsFilter === "inactive" ? "active" : undefined}
+                aria-pressed={listingsFilter === "inactive"}
+                onClick={() => changeListingsFilter("inactive")}
+              >
+                Inactivas
+              </button>
+            </div>
+          </div>
+          <div className="stack">
+            {paginatedListings.length === 0 ? (
+              <p className="muted">
+                {data.listings.length === 0
+                  ? "Todavía no publicaste."
+                  : `No tenés publicaciones ${listingsFilter === "active" ? "activas" : "inactivas"}.`}
+              </p>
+            ) : (
+              paginatedListings.map((listing) => (
+                <article
+                  className={`panel dashboard-listing${listing.image_url ? "" : " dashboard-listing-no-image"}`}
+                  key={listing.id}
+                >
+                  {listing.image_url && (
+                    <a href={`/publi/${listing.id}`} className="dashboard-listing-image-link">
+                      <img
+                        className="dashboard-listing-image"
+                        src={listing.image_url}
+                        alt={
+                          listing.card_names
+                            ? `Foto de ${listing.card_names}`
+                            : "Foto de la publicación"
+                        }
+                      />
+                    </a>
+                  )}
+                  <div className="dashboard-listing-content">
+                    <span className="status">{listingStatusLabel(listing.status)}</span>
+                    <h3>
+                      <a href={`/publi/${listing.id}`}>{listing.card_names ?? "Bulk"}</a>
+                    </h3>
+                    {listing.description && <p>{listing.description}</p>}
+                    <p>
+                      {listing.claim_count} claims · {money(listing.total_cents)}
+                    </p>
                   </div>
-                </details>
-              )}
-            </article>
-          ))
-        )}
-        {listingsPageCount > 1 && (
-          <nav className="pagination" aria-label="Páginas de publicaciones">
-            <button
-              type="button"
-              disabled={currentListingsPage === 1}
-              onClick={() => setListingsPage(currentListingsPage - 1)}
-            >
-              Anterior
-            </button>
-            <span>
-              Página {currentListingsPage} de {listingsPageCount}
-            </span>
-            <button
-              type="button"
-              disabled={currentListingsPage === listingsPageCount}
-              onClick={() => setListingsPage(currentListingsPage + 1)}
-            >
-              Siguiente
-            </button>
-          </nav>
-        )}
-      </div>
+                  {listing.status !== "inactive" && (
+                    <details className="dashboard-listing-menu">
+                      <summary aria-label="Opciones de la publicación" title="Opciones">
+                        <FontAwesomeIcon icon={faEllipsis} aria-hidden="true" />
+                      </summary>
+                      <div className="dashboard-listing-menu-popover">
+                        <ShareListingButton
+                          listingId={listing.id}
+                          title={listing.card_names ?? "Otros artículos"}
+                          itemNames={
+                            listing.card_names
+                              ?.split(",")
+                              .map((name) => name.trim())
+                              .filter(Boolean) ?? ["Otros artículos"]
+                          }
+                        />
+                        <button
+                          type="button"
+                          className="danger"
+                          onClick={() => deactivateListing(listing.id)}
+                        >
+                          Desactivar
+                        </button>
+                      </div>
+                    </details>
+                  )}
+                </article>
+              ))
+            )}
+            {listingsPageCount > 1 && (
+              <nav className="pagination" aria-label="Páginas de publicaciones">
+                <button
+                  type="button"
+                  disabled={currentListingsPage === 1}
+                  onClick={() => setListingsPage(currentListingsPage - 1)}
+                >
+                  Anterior
+                </button>
+                <span>
+                  Página {currentListingsPage} de {listingsPageCount}
+                </span>
+                <button
+                  type="button"
+                  disabled={currentListingsPage === listingsPageCount}
+                  onClick={() => setListingsPage(currentListingsPage + 1)}
+                >
+                  Siguiente
+                </button>
+              </nav>
+            )}
+          </div>
         </>
       )}
       {view === "deliveries" && (
         <>
-      <div className="section-heading">
-        <h1>Entregas</h1>
-        <div className="toggle-group" role="group" aria-label="Filtrar ventas">
-          <button
-            type="button"
-            className={salesFilter === "active" ? "active" : undefined}
-            aria-pressed={salesFilter === "active"}
-            onClick={() => setSalesFilter("active")}
-          >
-            Activas
-          </button>
-          <button
-            type="button"
-            className={salesFilter === "inactive" ? "active" : undefined}
-            aria-pressed={salesFilter === "inactive"}
-            onClick={() => setSalesFilter("inactive")}
-          >
-            Inactivas
-          </button>
-        </div>
-      </div>
-      {sales}
+          <div className="section-heading">
+            <h1>Entregas</h1>
+            <div className="toggle-group" role="group" aria-label="Filtrar ventas">
+              <button
+                type="button"
+                className={salesFilter === "active" ? "active" : undefined}
+                aria-pressed={salesFilter === "active"}
+                onClick={() => setSalesFilter("active")}
+              >
+                Activas
+              </button>
+              <button
+                type="button"
+                className={salesFilter === "inactive" ? "active" : undefined}
+                aria-pressed={salesFilter === "inactive"}
+                onClick={() => setSalesFilter("inactive")}
+              >
+                Inactivas
+              </button>
+            </div>
+          </div>
+          {sales}
         </>
       )}
       {view === "claims" && (
