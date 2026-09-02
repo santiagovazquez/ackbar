@@ -1070,6 +1070,7 @@ button {
 }
 .profile-publications {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: 28px;
   margin-top: 28px;
 }
@@ -1079,6 +1080,9 @@ button {
   padding: 22px;
   border-radius: 14px;
   box-shadow: 0 2px 12px var(--shadow);
+}
+.publication {
+  min-width: 0;
 }
 .publication img {
   display: block;
