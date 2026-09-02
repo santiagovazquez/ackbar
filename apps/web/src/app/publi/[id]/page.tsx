@@ -1,14 +1,8 @@
 import type { Metadata } from "next";
 import { getListing } from "../../../lib/api";
 import { Publication } from "../../../components/publication";
-import type { Currency } from "@swu/shared";
-const money = (cents: number | null, currency: Currency) =>
-  cents == null
-    ? "—"
-    : new Intl.NumberFormat("es-AR", {
-        style: "currency",
-        currency,
-      }).format(cents / 100);
+import { listingPreviewDescription } from "../../../lib/listing-metadata";
+
 export async function generateMetadata({
   params,
 }: {
@@ -17,23 +11,19 @@ export async function generateMetadata({
   const { id } = await params;
   try {
     const listing = await getListing(id);
-    const lines = listing.items
-      .slice(0, 4)
-      .map((item) =>
-        listing.listingType === "bulk"
-          ? `${item.detail} · ${money(item.unitPriceCents, listing.currency)}`
-          : `${item.quantity}× ${item.name}${item.detail ? ` (${item.detail})` : ""} · ${money(item.unitPriceCents, listing.currency)}`,
-      )
-      .join(" | ");
     const name = listing.listingType === "bulk" ? "Otros artículos" : listing.items[0]?.name;
+    const title = name ?? "Publicación en SWU Mercado";
+    const description = listingPreviewDescription(listing);
+    const images = listing.imageUrls.length ? [{ url: listing.imageUrls[0]! }] : undefined;
     return {
       title: `${name ?? "Publicación"} · SWU Mercado`,
-      description: listing.description ?? lines,
+      description,
       openGraph: {
-        title: name ?? "Publicación en SWU Mercado",
-        description: listing.description ?? lines,
-        images: listing.imageUrls.map((url) => ({ url })),
+        title,
+        description,
+        images,
       },
+      twitter: { card: "summary_large_image", title, description, images: listing.imageUrls[0] },
     };
   } catch {
     return { title: "Publicación no encontrada" };
