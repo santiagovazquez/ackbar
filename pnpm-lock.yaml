@@ -35,6 +35,12 @@ importers:
 
   apps/api:
     dependencies:
+      '@aws-sdk/client-s3':
+        specifier: ^3.1121.0
+        version: 3.1121.0
+      '@aws-sdk/s3-presigned-post':
+        specifier: ^3.1121.0
+        version: 3.1121.0
       '@libsql/client':
         specifier: ^0.15.15
         version: 0.15.15
@@ -81,12 +87,6 @@ importers:
 
   apps/web:
     dependencies:
-      '@aws-sdk/client-s3':
-        specifier: ^3.1121.0
-        version: 3.1121.0
-      '@aws-sdk/s3-presigned-post':
-        specifier: ^3.1121.0
-        version: 3.1121.0
       '@fortawesome/free-brands-svg-icons':
         specifier: ^7.3.1
         version: 7.3.1

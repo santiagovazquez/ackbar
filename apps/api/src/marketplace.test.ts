@@ -185,6 +185,9 @@ describe("marketplace lifecycle", () => {
   it("rejects anonymous publications and claims", async () => {
     expect((await request.post("/listings").send({})).status).toBe(401);
     expect(
+      (await request.post("/uploads").send({ contentType: "image/jpeg", size: 1024 })).status,
+    ).toBe(401);
+    expect(
       (await request.post("/claims").send({ itemId: "missing", quantity: 1, pricingMode: "unit" }))
         .status,
     ).toBe(401);

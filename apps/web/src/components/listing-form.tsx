@@ -1,7 +1,7 @@
 "use client";
 import { useRef, useState } from "react";
 import type { CardInput, Currency, ListingKind, ListingType } from "@swu/shared";
-import { createListing } from "../lib/api";
+import { api, createListing } from "../lib/api";
 import { useAuth } from "./auth-provider";
 import { CardAutocomplete } from "./card-autocomplete";
 
@@ -96,19 +96,15 @@ export function ListingForm({ kind }: { kind: ListingKind }) {
     try {
       const urls = await Promise.all(
         selectedFiles.map(async (file) => {
-          const response = await fetch("/api/upload", {
+          const upload = await api<{
+            url: string;
+            fields: Record<string, string>;
+            publicUrl: string;
+          }>("/uploads", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ contentType: file.type, size: file.size }),
           });
-          const upload = (await response.json()) as {
-            url?: string;
-            fields?: Record<string, string>;
-            publicUrl?: string;
-            error?: string;
-          };
-          if (!response.ok || !upload.url || !upload.fields || !upload.publicUrl)
-            throw new Error(upload.error ?? "No se pudo preparar la carga.");
           const form = new FormData();
           Object.entries(upload.fields).forEach(([name, value]) => form.append(name, value));
           form.append("file", file);

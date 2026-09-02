@@ -11,9 +11,12 @@
     "test": "vitest run",
     "db:migrate": "tsx src/migrate.ts",
     "db:seed": "tsx src/seed.ts",
-    "db:seed:listings": "tsx src/seed-local-listings.ts"
+    "db:seed:listings": "tsx src/seed-local-listings.ts",
+    "db:import-listing": "tsx src/import-listing.ts"
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.1121.0",
+    "@aws-sdk/s3-presigned-post": "^3.1121.0",
     "@libsql/client": "^0.15.15",
     "@swu/shared": "workspace:*",
     "cors": "^2.8.5",

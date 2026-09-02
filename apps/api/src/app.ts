@@ -5,6 +5,7 @@ import { migrate } from "./db.js";
 import { listingsRouter } from "./listings.js";
 import { claimsRouter } from "./claims.js";
 import { usersRouter } from "./users.js";
+import { uploadsRouter } from "./uploads.js";
 
 await migrate();
 export const app = express();
@@ -14,6 +15,7 @@ app.get("/health", (_request, response) => response.json({ status: "ok" }));
 app.use("/listings", listingsRouter);
 app.use("/claims", claimsRouter);
 app.use("/users", usersRouter);
+app.use("/uploads", uploadsRouter);
 app.use(
   (
     error: unknown,
