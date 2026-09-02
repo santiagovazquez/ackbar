@@ -2,8 +2,10 @@
 import { useCallback, useEffect, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { faWhatsapp } from "@fortawesome/free-brands-svg-icons";
+import { faEllipsis } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { useAuth } from "../../components/auth-provider";
+import { ShareListingButton } from "../../components/share-listing-button";
 import { api } from "../../lib/api";
 
 interface Exchange {
@@ -639,10 +641,18 @@ export default function Dashboard() {
               {listing.status !== "inactive" && (
                 <details className="dashboard-listing-menu">
                   <summary aria-label="Opciones de la publicación" title="Opciones">
-                    <span aria-hidden="true">•••</span>
+                    <FontAwesomeIcon icon={faEllipsis} aria-hidden="true" />
                   </summary>
                   <div className="dashboard-listing-menu-popover">
-                    <button type="button" onClick={() => deactivateListing(listing.id)}>
+                    <ShareListingButton
+                      listingId={listing.id}
+                      title={listing.card_names ?? "Otros artículos"}
+                    />
+                    <button
+                      type="button"
+                      className="danger"
+                      onClick={() => deactivateListing(listing.id)}
+                    >
                       Desactivar
                     </button>
                   </div>

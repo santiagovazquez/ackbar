@@ -2,10 +2,20 @@ import type { Listing } from "@swu/shared";
 import { ClaimControl } from "./claim-control";
 import { ImageCarousel } from "./image-carousel";
 import { formatDuration } from "../lib/format-duration";
+import { OwnerShareListingButton } from "./share-listing-button";
 
 export function Publication({ listing }: { listing: Listing }) {
+  const title =
+    listing.listingType === "bulk"
+      ? "Otros artículos"
+      : listing.items[0]?.name ?? "Publicación";
   return (
     <article className="publication">
+      <OwnerShareListingButton
+        ownerId={listing.seller.id}
+        listingId={listing.id}
+        title={title}
+      />
       {listing.imageUrls.length > 0 && <ImageCarousel urls={listing.imageUrls} />}
       {listing.buyerPaysShipping && (
         <span className="shipping-pill">Envío a cargo del comprador</span>
