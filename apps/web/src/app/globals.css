@@ -119,6 +119,43 @@ body {
   outline: 3px solid var(--focus-ring);
   outline-offset: 3px;
 }
+.delivery-person-card > h3 {
+  margin-bottom: 18px;
+  padding-right: 0;
+}
+.delivery-contact-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.delivery-contact-link svg {
+  color: #25d366;
+}
+.delivery-publications {
+  display: grid;
+  gap: 18px;
+}
+.delivery-publication {
+  display: grid;
+  gap: 12px;
+  padding-top: 18px;
+  border-top: 1px solid var(--border);
+}
+.delivery-publication:first-child {
+  padding-top: 0;
+  border-top: 0;
+}
+.delivery-publication-heading {
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  gap: 16px;
+}
+.delivery-publication-heading small {
+  display: block;
+  margin-top: 4px;
+  color: var(--muted);
+}
 a {
   color: inherit;
   text-decoration: none;

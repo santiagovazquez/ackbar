@@ -26,6 +26,17 @@ interface Exchange {
   counterparty_whatsapp: string | null;
   rated: number;
   currency: "ARS" | "USD";
+  created_at: string;
+}
+interface DeliveryPublication {
+  listingId: string;
+  claims: Exchange[];
+}
+interface DeliveryGroup {
+  buyerId: string;
+  buyerName: string;
+  claims: Exchange[];
+  publications: DeliveryPublication[];
 }
 interface RatingBreakdown {
   positive: number;
@@ -100,6 +111,22 @@ const setCodeFor = (claim: Exchange) => {
   const match = claim.card_id.match(/^([A-Z0-9]+)_\d+$/i);
   return match?.[1]?.toUpperCase() ?? null;
 };
+const claimDate = (value: string) =>
+  new Intl.DateTimeFormat("es-AR", { dateStyle: "medium" }).format(new Date(value));
+const isActiveDelivery = (claims: Exchange[]) => {
+  const alreadyRated = claims.some((claim) => Boolean(claim.rated));
+  return (
+    claims.some((claim) => claim.status === "claimed") ||
+    (!alreadyRated && claims.some((claim) => claim.status === "received" && !claim.rated))
+  );
+};
+const groupDeliveryPublications = (claims: Exchange[]) =>
+  claims.reduce<DeliveryPublication[]>((publications, claim) => {
+    const publication = publications.find((candidate) => candidate.listingId === claim.listing_id);
+    if (publication) publication.claims.push(claim);
+    else publications.push({ listingId: claim.listing_id, claims: [claim] });
+    return publications;
+  }, []);
 const ReputationSummary = ({
   label,
   positive,
@@ -248,29 +275,26 @@ export default function Dashboard() {
         <p>Cargando…</p>
       </main>
     );
-  const salesByDelivery = data.sales.reduce<
-    Array<{ key: string; buyerId: string; buyerName: string; claims: Exchange[] }>
-  >((groups, claim) => {
-    const key = `${claim.listing_id}:${claim.counterparty_id}`;
-    const group = groups.find((candidate) => candidate.key === key);
+  const salesByDelivery = data.sales.reduce<DeliveryGroup[]>((groups, claim) => {
+    const group = groups.find((candidate) => candidate.buyerId === claim.counterparty_id);
     if (group) group.claims.push(claim);
     else
       groups.push({
-        key,
         buyerId: claim.counterparty_id,
         buyerName: claim.counterparty_name,
         claims: [claim],
+        publications: [],
       });
     return groups;
   }, []);
-  const filteredSalesByDelivery = salesByDelivery.filter((group) => {
-    const groupAlreadyRated = group.claims.some((claim) => Boolean(claim.rated));
-    const isActive =
-      group.claims.some((claim) => claim.status === "claimed") ||
-      (!groupAlreadyRated &&
-        group.claims.some((claim) => claim.status === "received" && !claim.rated));
-    return salesFilter === "active" ? isActive : !isActive;
+  salesByDelivery.forEach((group) => {
+    group.publications = groupDeliveryPublications(group.claims).filter((publication) =>
+      salesFilter === "active"
+        ? isActiveDelivery(publication.claims)
+        : !isActiveDelivery(publication.claims),
+    );
   });
+  const filteredSalesByDelivery = salesByDelivery.filter((group) => group.publications.length > 0);
   const sales = (
     <div className="stack">
       {filteredSalesByDelivery.length === 0 ? (
@@ -281,111 +305,126 @@ export default function Dashboard() {
         </p>
       ) : (
         filteredSalesByDelivery.map((group) => {
-          const pendingClaims = group.claims.filter((claim) => claim.status === "claimed");
-          const ratingClaim = group.claims.find(
-            (claim) => claim.status === "received" && !claim.rated,
-          );
-          const groupAlreadyRated = group.claims.some((claim) => Boolean(claim.rated));
+          const contact = group.claims[0]!;
+          const whatsapp = contact.counterparty_whatsapp?.replace(/\D/g, "");
+          const contactHref = whatsapp
+            ? `https://wa.me/${whatsapp}`
+            : contact.counterparty_username
+              ? `/${contact.counterparty_username}`
+              : `/perfil/${group.buyerId}`;
           return (
-            <article className="panel exchange-card" key={group.key}>
-              {group.claims[0]!.counterparty_whatsapp && (
-                <a
-                  className="whatsapp-contact-icon"
-                  href={`https://wa.me/${group.claims[0]!.counterparty_whatsapp.replace(/\D/g, "")}`}
-                  target="_blank"
-                  rel="noreferrer"
-                  aria-label={`Contactar a ${group.buyerName} por WhatsApp`}
-                  title="Contactar por WhatsApp"
-                >
-                  <FontAwesomeIcon icon={faWhatsapp} aria-hidden="true" />
-                </a>
-              )}
-              <span className="status">
-                {exchangeStatusLabel(
-                  pendingClaims.length > 0 ? "claimed" : group.claims[0]!.status,
-                )}
-              </span>
+            <article className="panel exchange-card delivery-person-card" key={group.buyerId}>
               <h3>
-                Entrega a{" "}
                 <a
-                  href={
-                    group.claims[0]!.counterparty_username
-                      ? `/${group.claims[0]!.counterparty_username}`
-                      : `/perfil/${group.buyerId}`
-                  }
+                  className={whatsapp ? "delivery-contact-link" : undefined}
+                  href={contactHref}
+                  target={whatsapp ? "_blank" : undefined}
+                  rel={whatsapp ? "noreferrer" : undefined}
                 >
-                  {group.buyerName}
+                  Entrega a {group.buyerName}
+                  {whatsapp && <FontAwesomeIcon icon={faWhatsapp} aria-hidden="true" />}
                 </a>
               </h3>
-              <p>
-                <a href={`/publi/${group.claims[0]!.listing_id}`}>
-                  {group.claims[0]!.description || "Ver publicación"}
-                </a>
-              </p>
-              <div className="market-table-wrap">
-                <table className="market-table">
-                  <thead>
-                    <tr>
-                      <th className="market-quantity-heading" aria-label="Cantidad" />
-                      <th>Artículo</th>
-                      <th className="market-price market-playset-price">Precio</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {group.claims.map((claim) => {
-                      const setCode = setCodeFor(claim);
-                      return (
-                        <tr key={claim.id}>
-                          <td className="market-quantity">{claim.quantity}</td>
-                          <td className="market-article">
-                            <a href={`/publi/${claim.listing_id}`}>
-                              {claim.listing_type === "bulk" ? (
-                                claim.detail || claim.card_name
-                              ) : (
-                                <>
-                                  <span className="card-name">
-                                    {claim.card_name}
-                                    {setCode && <small className="card-set">{setCode}</small>}
-                                  </span>
-                                  {claim.detail && (
-                                    <small className="card-detail">{claim.detail}</small>
-                                  )}
-                                </>
-                              )}
-                            </a>
-                          </td>
-                          <td className="market-price market-playset-price">
-                            {exchangeMoney(claim.amount_cents, claim.currency)}
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                  <tfoot>
-                    <tr>
-                      <th colSpan={2}>Total</th>
-                      <td className="market-price market-playset-price">
-                        {totalsLabel(exchangeTotals(group.claims))}
-                      </td>
-                    </tr>
-                  </tfoot>
-                </table>
+              <div className="delivery-publications">
+                {group.publications.map((publication) => {
+                  const firstClaim = publication.claims[0]!;
+                  const pendingClaims = publication.claims.filter(
+                    (claim) => claim.status === "claimed",
+                  );
+                  const ratingClaim = publication.claims.find(
+                    (claim) => claim.status === "received" && !claim.rated,
+                  );
+                  const alreadyRated = publication.claims.some((claim) => Boolean(claim.rated));
+                  const dates = [
+                    ...new Set(publication.claims.map((claim) => claimDate(claim.created_at))),
+                  ];
+                  return (
+                    <section className="delivery-publication" key={publication.listingId}>
+                      <div className="delivery-publication-heading">
+                        <div>
+                          <a href={`/publi/${publication.listingId}`}>
+                            <strong>{firstClaim.description || "Ver publicación"}</strong>
+                          </a>
+                          <small>Claim: {dates.join(", ")}</small>
+                        </div>
+                        <span className="status">
+                          {exchangeStatusLabel(
+                            pendingClaims.length > 0 ? "claimed" : firstClaim.status,
+                          )}
+                        </span>
+                      </div>
+                      <div className="market-table-wrap">
+                        <table className="market-table">
+                          <thead>
+                            <tr>
+                              <th className="market-quantity-heading" aria-label="Cantidad" />
+                              <th>Artículo</th>
+                              <th className="market-price market-playset-price">Precio</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {publication.claims.map((claim) => {
+                              const setCode = setCodeFor(claim);
+                              return (
+                                <tr key={claim.id}>
+                                  <td className="market-quantity">{claim.quantity}</td>
+                                  <td className="market-article">
+                                    <a href={`/publi/${claim.listing_id}`}>
+                                      {claim.listing_type === "bulk" ? (
+                                        claim.detail || claim.card_name
+                                      ) : (
+                                        <>
+                                          <span className="card-name">
+                                            {claim.card_name}
+                                            {setCode && (
+                                              <small className="card-set">{setCode}</small>
+                                            )}
+                                          </span>
+                                          {claim.detail && (
+                                            <small className="card-detail">{claim.detail}</small>
+                                          )}
+                                        </>
+                                      )}
+                                    </a>
+                                  </td>
+                                  <td className="market-price market-playset-price">
+                                    {exchangeMoney(claim.amount_cents, claim.currency)}
+                                  </td>
+                                </tr>
+                              );
+                            })}
+                          </tbody>
+                          <tfoot>
+                            <tr>
+                              <th colSpan={2}>Total</th>
+                              <td className="market-price market-playset-price">
+                                {totalsLabel(exchangeTotals(publication.claims))}
+                              </td>
+                            </tr>
+                          </tfoot>
+                        </table>
+                      </div>
+                      {pendingClaims.length > 0 && (
+                        <div className="actions">
+                          <button
+                            onClick={() => deliverClaims(pendingClaims.map((claim) => claim.id))}
+                          >
+                            Marcar publicación entregada
+                          </button>
+                        </div>
+                      )}
+                      {pendingClaims.length === 0 && ratingClaim && !alreadyRated && (
+                        <div className="actions">
+                          <span>Calificar como comprador:</span>
+                          <button onClick={() => rate(ratingClaim.id, "positive")}>Positiva</button>
+                          <button onClick={() => rate(ratingClaim.id, "neutral")}>Neutral</button>
+                          <button onClick={() => rate(ratingClaim.id, "negative")}>Negativa</button>
+                        </div>
+                      )}
+                    </section>
+                  );
+                })}
               </div>
-              <div className="actions">
-                {pendingClaims.length > 0 && (
-                  <button onClick={() => deliverClaims(pendingClaims.map((claim) => claim.id))}>
-                    Marcar todo entregado
-                  </button>
-                )}
-              </div>
-              {pendingClaims.length === 0 && ratingClaim && !groupAlreadyRated && (
-                <div className="actions">
-                  <span>Calificar a {group.buyerName} como comprador:</span>
-                  <button onClick={() => rate(ratingClaim.id, "positive")}>Positiva</button>
-                  <button onClick={() => rate(ratingClaim.id, "neutral")}>Neutral</button>
-                  <button onClick={() => rate(ratingClaim.id, "negative")}>Negativa</button>
-                </div>
-              )}
             </article>
           );
         })
