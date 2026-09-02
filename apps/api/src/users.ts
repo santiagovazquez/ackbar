@@ -67,6 +67,13 @@ usersRouter.get("/me/notifications", requireAuth, async (req, res) => {
   });
   res.json(result.rows);
 });
+usersRouter.patch("/me/notifications/read", requireAuth, async (req, res) => {
+  await db.execute({
+    sql: `UPDATE notifications SET read_at=? WHERE user_id=? AND read_at IS NULL`,
+    args: [new Date().toISOString(), req.user!.id],
+  });
+  res.status(204).end();
+});
 usersRouter.patch("/me/notifications/:id/read", requireAuth, async (req, res) => {
   const result = await db.execute({
     sql: `UPDATE notifications SET read_at=COALESCE(read_at,?) WHERE id=? AND user_id=?`,

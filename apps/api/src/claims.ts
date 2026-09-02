@@ -85,7 +85,7 @@ claimsRouter.post("/batch", async (req, res) => {
           String(item.owner_id),
           String(item.listing_id),
           id,
-          `${req.user!.name} hizo un claim por ${quantity} × ${String(item.card_name)}`,
+          `🔒 ${quantity}x ${String(item.card_name)} (${req.user!.name})`,
           new Date().toISOString(),
         ],
       });
@@ -162,7 +162,7 @@ claimsRouter.post("/", async (req, res) => {
         String(item.owner_id),
         String(item.listing_id),
         id,
-        `${req.user!.name} hizo un claim por ${quantity} × ${String(item.card_name)}`,
+        `🔒 ${quantity}x ${String(item.card_name)} (${req.user!.name})`,
         new Date().toISOString(),
       ],
     });

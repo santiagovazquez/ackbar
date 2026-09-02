@@ -16,6 +16,7 @@ interface Notification {
 export function Notifications() {
   const router = useRouter();
   const menu = useRef<HTMLDetailsElement>(null);
+  const wasOpened = useRef(false);
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const load = useCallback(() => {
     void api<Notification[]>("/users/me/notifications", {
@@ -37,6 +38,21 @@ export function Notifications() {
     return () => document.removeEventListener("pointerdown", closeOnOutsideClick);
   }, []);
   const unread = notifications.filter((notification) => !notification.read_at).length;
+  function handleToggle() {
+    if (menu.current?.open) {
+      wasOpened.current = true;
+      return;
+    }
+    if (!wasOpened.current || unread === 0) return;
+    wasOpened.current = false;
+    const readAt = new Date().toISOString();
+    setNotifications((current) =>
+      current.map((notification) =>
+        notification.read_at ? notification : { ...notification, read_at: readAt },
+      ),
+    );
+    void api("/users/me/notifications/read", { method: "PATCH" }).catch(load);
+  }
   async function open(notification: Notification) {
     if (!notification.read_at) {
       await api(`/users/me/notifications/${notification.id}/read`, {
@@ -46,7 +62,7 @@ export function Notifications() {
     router.push(`/publi/${notification.listing_id}`);
   }
   return (
-    <details className="notifications" ref={menu}>
+    <details className="notifications" ref={menu} onToggle={handleToggle}>
       <summary aria-label={`${unread} notificaciones sin leer`}>
         <FontAwesomeIcon icon={faBell} aria-hidden="true" />
         {unread > 0 && <strong>{unread}</strong>}

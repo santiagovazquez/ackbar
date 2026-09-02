@@ -463,16 +463,27 @@ describe("marketplace lifecycle", () => {
       .get("/users/me/notifications")
       .set(authenticated("seller-token"));
     expect(sellerNotifications.body).toEqual(
-      expect.arrayContaining([expect.objectContaining({ type: "claim", claim_id: claim.body.id })]),
+      expect.arrayContaining([
+        expect.objectContaining({
+          type: "claim",
+          claim_id: claim.body.id,
+          message: "🔒 1x Notification Test Card (Buyer)",
+        }),
+      ]),
     );
 
     expect(
-      (
-        await request
-          .patch(`/users/me/notifications/${match.id}/read`)
-          .set(authenticated("buyer-token"))
-      ).status,
+      (await request.patch("/users/me/notifications/read").set(authenticated("buyer-token")))
+        .status,
     ).toBe(204);
+    const readBuyerNotifications = await request
+      .get("/users/me/notifications")
+      .set(authenticated("buyer-token"));
+    expect(
+      readBuyerNotifications.body.find(
+        (notification: { id: string }) => notification.id === match.id,
+      ).read_at,
+    ).not.toBeNull();
   });
 
   it("requires delivery and receipt before both parties can rate each other", async () => {

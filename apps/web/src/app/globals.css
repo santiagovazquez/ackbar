@@ -336,6 +336,16 @@ nav a:hover {
   font-size: 0.7rem;
   white-space: nowrap;
 }
+@media (max-width: 480px) {
+  .notifications-popover {
+    position: fixed;
+    top: 76px;
+    right: 15px;
+    left: 15px;
+    width: auto;
+    max-height: calc(100dvh - 91px);
+  }
+}
 .local-login summary {
   list-style: none;
   cursor: pointer;
