@@ -135,6 +135,7 @@ textarea {
   background: var(--dark);
   color: var(--paper);
   display: flex;
+  flex-wrap: nowrap;
   align-items: center;
   justify-content: space-between;
   gap: 20px;
@@ -154,8 +155,11 @@ textarea {
 }
 nav {
   display: flex;
+  flex: 0 0 auto;
+  flex-wrap: nowrap;
   align-items: center;
   gap: 18px;
+  white-space: nowrap;
 }
 nav a:hover {
   color: var(--accent);
@@ -1762,9 +1766,14 @@ textarea {
   color: #b42318;
 }
 @media (max-width: 720px) {
-  .topbar,
-  nav {
-    flex-wrap: wrap;
+  .brand {
+    flex-shrink: 1;
+    height: auto;
+  }
+  .brand-logo {
+    width: clamp(44px, calc(100vw - 276px), 120px);
+    max-width: 100%;
+    height: auto;
   }
   .hero {
     padding: 32px;
