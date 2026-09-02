@@ -130,7 +130,8 @@ recover() {
 
   if [[ -n "$old_release" && -d "$old_release" ]]; then
     ln -sfn "$old_release" "$current"
-    app_pm2 startOrReload "$old_release/ecosystem.config.cjs" --update-env || true
+    app_pm2 delete ackbar-api ackbar-web 2>/dev/null || true
+    app_pm2 start "$old_release/ecosystem.config.cjs" --update-env || true
   elif [[ "$services_stopped" == true ]]; then
     # A failed first deployment has no old release to restart.
     app_pm2 delete ackbar-api ackbar-web 2>/dev/null || true
@@ -173,7 +174,11 @@ if [[ -n "$old_release" ]]; then
 fi
 
 ln -sfn "$release" "$current"
-app_pm2 startOrReload "$release/ecosystem.config.cjs" --update-env
+# PM2 reloads keep immutable fields such as cwd from the existing process.
+# Recreate these two processes so every release switch adopts the selected
+# release's paths and command configuration.
+app_pm2 delete ackbar-api ackbar-web 2>/dev/null || true
+app_pm2 start "$release/ecosystem.config.cjs" --update-env
 app_pm2 save
 
 # Give the API up to 20 seconds to start, then require both applications to

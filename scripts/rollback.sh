@@ -69,7 +69,8 @@ recover() {
   trap - ERR
   echo "Rollback failed; restarting the current release." >&2
   ln -sfn "$current_release" "$current"
-  app_pm2 startOrReload "$current_release/ecosystem.config.cjs" --update-env || true
+  app_pm2 delete ackbar-api ackbar-web 2>/dev/null || true
+  app_pm2 start "$current_release/ecosystem.config.cjs" --update-env || true
   exit "$exit_code"
 }
 
@@ -91,7 +92,8 @@ fi
 ln -sfn "$target_release" "$current"
 ln -sfn "$current_release" "$previous"
 
-app_pm2 startOrReload "$target_release/ecosystem.config.cjs" --update-env
+app_pm2 delete ackbar-api ackbar-web 2>/dev/null || true
+app_pm2 start "$target_release/ecosystem.config.cjs" --update-env
 app_pm2 save
 
 # --- Verify the restored release --------------------------------------------
