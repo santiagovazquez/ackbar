@@ -8,7 +8,9 @@ A community marketplace for buying, selling, and claiming Star Wars Unlimited si
 - `apps/api`: Node.js/Express API. It uses local SQLite in development and Turso/libSQL in production.
 - `packages/shared`: shared TypeScript contracts.
 
-Google sign-in is initiated entirely in the browser. Protected API routes independently verify Google's ID token; trusting a browser-provided user ID would allow impersonation.
+Google sign-in is initiated in the browser and exchanged for a 30-day, renewable application
+session. The opaque session token is stored in a secure, HttpOnly cookie and only its hash is kept in
+the database.
 
 ## Local setup
 
@@ -47,7 +49,7 @@ allowed CORS origin. Without `.env.local`, development continues to use `localho
 
 ## Production
 
-Build the workspace with `pnpm build`, run the API with `pnpm --filter @swu/api start`, and run the web app with `pnpm --filter @swu/web start`. Set `NEXT_PUBLIC_API_URL` to the public API URL and `WEB_ORIGIN` to the public web URL. A process manager and reverse proxy can keep both services running behind HTTPS on a private server.
+Build the workspace with `pnpm build`, run the API with `pnpm --filter @swu/api start`, and run the web app with `pnpm --filter @swu/web start`. Set `NEXT_PUBLIC_API_URL` to the public API URL and `WEB_ORIGIN` to the public web URL. When they use different subdomains, set `SESSION_COOKIE_DOMAIN` to their shared parent domain (for example, `.example.com`). A process manager and reverse proxy can keep both services running behind HTTPS on a private server.
 
 Photo uploads use presigned S3 POSTs and go directly from the browser to the bucket. Configure `S3_BUCKET`, `S3_REGION`, `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, and `S3_PUBLIC_URL` in the web app environment. The bucket must allow public reads (or be fronted by the public CDN in `S3_PUBLIC_URL`) and its CORS policy must allow `POST` from the web origin. Each publication supports up to 24 images of 20 MB each.
 

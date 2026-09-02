@@ -50,7 +50,6 @@ export function ClaimControl({ listing }: { listing: Listing }) {
       return;
     }
     const rows = await api<ClaimedItem[]>(`/claims/listing/${listing.id}`, {
-      headers: { Authorization: `Bearer ${token}` },
       cache: "no-store",
     });
     setClaims(rows);
@@ -129,7 +128,7 @@ export function ClaimControl({ listing }: { listing: Listing }) {
     try {
       await api("/claims/batch", {
         method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ claims }),
       });
       const confirmed = { ...selection };

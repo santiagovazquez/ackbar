@@ -1,12 +1,46 @@
 import { Router } from "express";
 import { z } from "zod";
 import { db } from "./db.js";
-import { requireAuth } from "./auth.js";
-import { localAuthToken } from "./auth.js";
+import {
+  authenticateGoogleToken,
+  authenticateLocalToken,
+  createSession,
+  destroySession,
+  localAuthToken,
+  requireAuth,
+} from "./auth.js";
 import { config } from "./config.js";
 import { isReservedProfileUsername } from "@swu/shared";
 
 export const usersRouter = Router();
+usersRouter.post("/session/google", async (req, res) => {
+  const credential = z.object({ credential: z.string().min(1) }).safeParse(req.body);
+  if (!credential.success) return res.status(400).json({ error: "Google credential required" });
+  try {
+    const user = await authenticateGoogleToken(credential.data.credential);
+    if (!user) return res.status(401).json({ error: "Invalid Google identity" });
+    await destroySession(req, res);
+    await createSession(res, user.id);
+    res.json({ user });
+  } catch {
+    res.status(401).json({ error: "Invalid or expired Google identity" });
+  }
+});
+usersRouter.post("/session/local", async (req, res) => {
+  if (!config.localAuthEnabled) return res.status(404).json({ error: "Not found" });
+  const token = z.object({ token: z.string() }).safeParse(req.body);
+  if (!token.success || !token.data.token.startsWith("local-user:"))
+    return res.status(401).json({ error: "Invalid local identity" });
+  const identity = await authenticateLocalToken(token.data.token);
+  if (!identity) return res.status(401).json({ error: "Invalid local identity" });
+  await destroySession(req, res);
+  await createSession(res, identity.id);
+  res.status(204).end();
+});
+usersRouter.delete("/session", async (req, res) => {
+  await destroySession(req, res);
+  res.status(204).end();
+});
 usersRouter.get("/local-auth", async (_req, res) => {
   if (!config.localAuthEnabled) return res.status(404).json({ error: "Not found" });
   const users = await db.execute(

@@ -12,13 +12,18 @@ function requiredEnvironmentVariable(name: string) {
 }
 
 export async function POST(request: Request) {
-  const token = request.headers.get("authorization")?.replace(/^Bearer /, "");
-  if (!token) return NextResponse.json({ error: "Authentication required" }, { status: 401 });
+  const sessionCookie = request.headers
+    .get("cookie")
+    ?.split(";")
+    .find((cookie) => cookie.trim().startsWith("ackbar_session="))
+    ?.trim();
+  if (!sessionCookie)
+    return NextResponse.json({ error: "Authentication required" }, { status: 401 });
 
   try {
     const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4001";
     const authentication = await fetch(`${apiUrl}/users/me`, {
-      headers: { Authorization: `Bearer ${token}` },
+      headers: { Cookie: sessionCookie },
       cache: "no-store",
     });
     if (!authentication.ok) throw new Error("Invalid identity token");

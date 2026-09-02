@@ -15,6 +15,7 @@ vi.mock("google-auth-library", () => ({
 }));
 
 let request: ReturnType<typeof supertest>;
+let application: typeof import("./app.js").app;
 let database: typeof import("./db.js").db;
 const databasePath = `/tmp/swu-marketplace-test-${process.pid}.db`;
 const authenticated = (token: string) => ({ Authorization: `Bearer ${token}` });
@@ -23,7 +24,8 @@ beforeAll(async () => {
   process.env.DATABASE_URL = `file:${databasePath}`;
   process.env.GOOGLE_CLIENT_ID = "test-client";
   const [{ app }, dbModule] = await Promise.all([import("./app.js"), import("./db.js")]);
-  request = supertest(app);
+  application = app;
+  request = supertest(application);
   database = dbModule.db;
   for (const [token, username, whatsapp] of [
     ["seller-token", "seller", "+5491111111111"],
@@ -81,9 +83,7 @@ describe("card search", () => {
     for (const query of ["shin hati fiend", "shin fiend"]) {
       const response = await request.get("/listings/cards/search").query({ q: query });
       expect(response.status).toBe(200);
-      expect(response.body.map((card: { id: string }) => card.id)).toContain(
-        "search-shin-fighter",
-      );
+      expect(response.body.map((card: { id: string }) => card.id)).toContain("search-shin-fighter");
     }
 
     const subtitleResponse = await request
@@ -96,6 +96,22 @@ describe("card search", () => {
 });
 
 describe("marketplace lifecycle", () => {
+  it("creates a persistent cookie session and revokes it on logout", async () => {
+    const browser = supertest.agent(application);
+    const login = await browser.post("/users/session/google").send({ credential: "seller-token" });
+    expect(login.status).toBe(200);
+    expect(login.headers["set-cookie"]?.[0]).toContain("ackbar_session=");
+    expect(login.headers["set-cookie"]?.[0]).toContain("HttpOnly");
+    expect(login.headers["set-cookie"]?.[0]).toContain("Max-Age=2592000");
+
+    const authenticatedSession = await browser.get("/users/me");
+    expect(authenticatedSession.status).toBe(200);
+    expect(authenticatedSession.body.user.id).toBe("usr_seller");
+
+    expect((await browser.delete("/users/session")).status).toBe(204);
+    expect((await browser.get("/users/me")).status).toBe(401);
+  });
+
   it("requires WhatsApp and a username with at least three letters", async () => {
     for (const profile of [
       { username: "ab1", whatsapp: "+5491111111111" },

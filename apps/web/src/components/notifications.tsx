@@ -13,16 +13,15 @@ interface Notification {
   created_at: string;
 }
 
-export function Notifications({ token }: { token: string }) {
+export function Notifications() {
   const router = useRouter();
   const menu = useRef<HTMLDetailsElement>(null);
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const load = useCallback(() => {
     void api<Notification[]>("/users/me/notifications", {
-      headers: { Authorization: `Bearer ${token}` },
       cache: "no-store",
     }).then(setNotifications);
-  }, [token]);
+  }, []);
   useEffect(() => {
     load();
     const interval = window.setInterval(load, 30_000);
@@ -42,7 +41,6 @@ export function Notifications({ token }: { token: string }) {
     if (!notification.read_at) {
       await api(`/users/me/notifications/${notification.id}/read`, {
         method: "PATCH",
-        headers: { Authorization: `Bearer ${token}` },
       });
     }
     router.push(`/publi/${notification.listing_id}`);

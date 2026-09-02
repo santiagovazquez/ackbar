@@ -7,6 +7,7 @@ export const config = {
   databaseAuthToken: process.env.DATABASE_AUTH_TOKEN,
   googleClientId: process.env.GOOGLE_CLIENT_ID ?? "",
   webOrigin: process.env.WEB_ORIGIN ?? "http://localhost:4000",
+  sessionCookieDomain: process.env.SESSION_COOKIE_DOMAIN,
   localAuthEnabled:
     process.env.NODE_ENV !== "production" &&
     (process.env.DATABASE_URL ?? "file:local.db").startsWith("file:"),

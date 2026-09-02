@@ -56,18 +56,15 @@ export function ListingForm({ kind }: { kind: ListingKind }) {
     setBusy(true);
     setError("");
     try {
-      const listing = await createListing(
-        {
-          kind,
-          listingType: isWanted ? "singles" : listingType,
-          currency,
-          buyerPaysShipping: isWanted ? false : buyerPaysShipping,
-          ...(description.trim() ? { description: description.trim() } : {}),
-          imageUrls: !isWanted && imageUrls.length ? imageUrls : undefined,
-          items: isWanted || listingType === "singles" ? items : articles,
-        },
-        token,
-      );
+      const listing = await createListing({
+        kind,
+        listingType: isWanted ? "singles" : listingType,
+        currency,
+        buyerPaysShipping: isWanted ? false : buyerPaysShipping,
+        ...(description.trim() ? { description: description.trim() } : {}),
+        imageUrls: !isWanted && imageUrls.length ? imageUrls : undefined,
+        items: isWanted || listingType === "singles" ? items : articles,
+      });
       location.href = `/publi/${listing.id}`;
     } catch (e) {
       setError(e instanceof Error ? e.message : "No se pudo publicar");
@@ -101,7 +98,7 @@ export function ListingForm({ kind }: { kind: ListingKind }) {
         selectedFiles.map(async (file) => {
           const response = await fetch("/api/upload", {
             method: "POST",
-            headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+            headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ contentType: file.type, size: file.size }),
           });
           const upload = (await response.json()) as {

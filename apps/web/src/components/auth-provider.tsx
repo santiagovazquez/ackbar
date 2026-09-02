@@ -27,20 +27,6 @@ const AuthContext = createContext<Auth>({
 });
 export const useAuth = () => useContext(AuthContext);
 
-function tokenExpiration(token: string) {
-  if (token.startsWith("local-user:")) return Infinity;
-  try {
-    const encodedPayload = token.split(".")[1];
-    if (!encodedPayload) return null;
-    const payload = JSON.parse(atob(encodedPayload.replace(/-/g, "+").replace(/_/g, "/"))) as {
-      exp?: number;
-    };
-    return typeof payload.exp === "number" ? payload.exp * 1000 : null;
-  } catch {
-    return null;
-  }
-}
-
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [token, setToken] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -49,59 +35,45 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const loginMenu = useRef<HTMLDetailsElement>(null);
   const userMenu = useRef<HTMLDetailsElement>(null);
   useEffect(() => {
-    const storedToken = sessionStorage.getItem("google_id_token");
-    const expiration = storedToken ? tokenExpiration(storedToken) : null;
-    if (storedToken && expiration && expiration > Date.now()) setToken(storedToken);
-    else sessionStorage.removeItem("google_id_token");
-    setIsLoading(false);
+    api<{ user: AuthUser }>("/users/me", { cache: "no-store" })
+      .then((response) => {
+        setUser(response.user);
+        setToken("session");
+      })
+      .catch(() => undefined)
+      .finally(() => setIsLoading(false));
     api<LocalUser[]>("/users/local-auth")
       .then(setLocalUsers)
       .catch(() => setLocalUsers([]));
   }, []);
-  const save = (value: string) => {
-    sessionStorage.setItem("google_id_token", value);
-    setToken(value);
-  };
   const signOut = () => {
-    sessionStorage.removeItem("google_id_token");
     setToken(null);
     setUser(null);
+    void api("/users/session", { method: "DELETE", keepalive: true }).catch(() => undefined);
     if (userMenu.current) userMenu.current.open = false;
   };
-  const selectLocalUser = (value: string) => {
-    save(value);
+  const selectLocalUser = async (value: string) => {
+    await api("/users/session/local", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ token: value }),
+    });
+    const response = await api<{ user: AuthUser }>("/users/me", { cache: "no-store" });
+    setUser(response.user);
+    setToken("session");
     if (loginMenu.current) loginMenu.current.open = false;
   };
-  const googleLoginSuccess = (credential?: string) => {
+  const googleLoginSuccess = async (credential?: string) => {
     if (!credential) return;
-    save(credential);
+    const response = await api<{ user: AuthUser }>("/users/session/google", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ credential }),
+    });
+    setUser(response.user);
+    setToken("session");
     if (loginMenu.current) loginMenu.current.open = false;
   };
-  useEffect(() => {
-    if (!token) return;
-    if (token.startsWith("local-user:")) return;
-    const expiration = tokenExpiration(token);
-    if (!expiration) {
-      signOut();
-      return;
-    }
-    const remaining = expiration - Date.now();
-    if (remaining <= 0) {
-      signOut();
-      return;
-    }
-    const timeout = window.setTimeout(signOut, remaining);
-    return () => window.clearTimeout(timeout);
-  }, [token]);
-  useEffect(() => {
-    if (!token) return;
-    api<{ user: AuthUser }>("/users/me", {
-      headers: { Authorization: `Bearer ${token}` },
-      cache: "no-store",
-    })
-      .then((response) => setUser(response.user))
-      .catch(signOut);
-  }, [token]);
   useEffect(() => {
     const closeUserMenu = (event: MouseEvent) => {
       if (userMenu.current?.open && !userMenu.current.contains(event.target as Node)) {
@@ -128,7 +100,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           <nav>
             {token && <a href="/vendo">Vendo</a>}
             {token && <a href="/busco">Busco</a>}
-            {token && <Notifications token={token} />}
+            {token && <Notifications />}
             {isLoading ? null : token ? (
               <details className="user-menu" ref={userMenu}>
                 <summary aria-label="Abrir menú de usuario" title={user?.name ?? "Mi cuenta"}>
@@ -175,7 +147,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                       <button
                         key={user.id}
                         type="button"
-                        onClick={() => selectLocalUser(user.token)}
+                        onClick={() => void selectLocalUser(user.token)}
                       >
                         <span>{user.name}</span>
                         <small>{user.email}</small>
@@ -194,7 +166,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           </nav>
         </header>
         {token && user && (!user.username || !user.whatsapp) && (
-          <Registration token={token} onComplete={setUser} />
+          <Registration onComplete={setUser} />
         )}
         {children}
       </AuthContext.Provider>
@@ -202,13 +174,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   );
 }
 
-function Registration({
-  token,
-  onComplete,
-}: {
-  token: string;
-  onComplete: (user: AuthUser) => void;
-}) {
+function Registration({ onComplete }: { onComplete: (user: AuthUser) => void }) {
   const [username, setUsername] = useState("");
   const [whatsapp, setWhatsapp] = useState("+54");
   const [error, setError] = useState("");
@@ -220,7 +186,7 @@ function Registration({
     try {
       const response = await api<{ user: AuthUser }>("/users/me/profile", {
         method: "PUT",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ username, whatsapp }),
       });
       onComplete(response.user);

@@ -149,11 +149,7 @@ export default function Dashboard() {
   const load = useCallback(async () => {
     if (!token) return;
     try {
-      setData(
-        await api<DashboardData>("/users/me/dashboard", {
-          headers: { Authorization: `Bearer ${token}` },
-        }),
-      );
+      setData(await api<DashboardData>("/users/me/dashboard"));
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : "No se pudo cargar el panel.");
     }
@@ -203,7 +199,7 @@ export default function Dashboard() {
       return;
     await api("/claims/batch/delivered", {
       method: "PATCH",
-      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ claimIds }),
     });
     await load();
@@ -214,7 +210,7 @@ export default function Dashboard() {
       claimIds.map((claimId) =>
         api(`/claims/${claimId}/status`, {
           method: "PATCH",
-          headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+          headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ status: "received" }),
         }),
       ),
@@ -225,7 +221,7 @@ export default function Dashboard() {
     if (!token) return;
     await api("/users/ratings", {
       method: "POST",
-      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ claimId: id, value }),
     });
     await load();
@@ -234,7 +230,6 @@ export default function Dashboard() {
     if (!token || !confirm("¿Querés desactivar esta publicación?")) return;
     await api(`/listings/${id}/deactivate`, {
       method: "PATCH",
-      headers: { Authorization: `Bearer ${token}` },
     });
     await load();
   }

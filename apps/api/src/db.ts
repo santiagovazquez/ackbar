@@ -6,6 +6,7 @@ export const db = createClient({ url: config.databaseUrl, authToken: config.data
 export async function migrate() {
   const statements = [
     `CREATE TABLE IF NOT EXISTS users (id TEXT PRIMARY KEY, google_sub TEXT UNIQUE NOT NULL, email TEXT UNIQUE NOT NULL, name TEXT NOT NULL, avatar_url TEXT, created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP)`,
+    `CREATE TABLE IF NOT EXISTS sessions (token_hash TEXT PRIMARY KEY, user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE, expires_at TEXT NOT NULL, created_at TEXT NOT NULL)`,
     `CREATE TABLE IF NOT EXISTS listings (id TEXT PRIMARY KEY, owner_id TEXT NOT NULL REFERENCES users(id), kind TEXT NOT NULL CHECK(kind IN ('sale','wanted')), title TEXT NOT NULL, image_url TEXT, buyer_pays_shipping INTEGER NOT NULL DEFAULT 0, status TEXT NOT NULL DEFAULT 'active' CHECK(status IN ('active','closed','expired','deleted')), created_at TEXT NOT NULL, expires_at TEXT NOT NULL, deleted_at TEXT)`,
     `CREATE TABLE IF NOT EXISTS listing_items (id TEXT PRIMARY KEY, listing_id TEXT NOT NULL REFERENCES listings(id), card_id TEXT NOT NULL, card_name TEXT NOT NULL, detail TEXT, quantity INTEGER NOT NULL CHECK(quantity > 0), unit_price_cents INTEGER, playset_price_cents INTEGER)`,
     `CREATE TABLE IF NOT EXISTS listing_images (id TEXT PRIMARY KEY, listing_id TEXT NOT NULL REFERENCES listings(id), url TEXT NOT NULL, position INTEGER NOT NULL)`,
@@ -17,6 +18,8 @@ export async function migrate() {
     `CREATE INDEX IF NOT EXISTS idx_claims_item ON claims(item_id)`,
     `CREATE INDEX IF NOT EXISTS idx_listing_images_listing ON listing_images(listing_id, position)`,
     `CREATE INDEX IF NOT EXISTS idx_notifications_user ON notifications(user_id, created_at DESC)`,
+    `CREATE INDEX IF NOT EXISTS idx_sessions_user ON sessions(user_id)`,
+    `CREATE INDEX IF NOT EXISTS idx_sessions_expiry ON sessions(expires_at)`,
   ];
   await db.batch(
     statements.map((sql) => ({ sql })),
