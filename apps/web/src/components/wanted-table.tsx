@@ -44,10 +44,10 @@ export function WantedTable({ listings }: { listings: Listing[] }) {
             <table className="market-table wanted-table">
               <thead>
                 <tr>
-                  <th>Cant.</th>
+                  <th className="wanted-quantity-heading" aria-label="Cantidad" />
                   <th>Carta</th>
                   <th>Buscada por</th>
-                  <th>Publicada</th>
+                  <th className="wanted-published">Publicada</th>
                 </tr>
               </thead>
               <tbody>
@@ -77,7 +77,7 @@ export function WantedTable({ listings }: { listings: Listing[] }) {
                         {item.subtitle && <small className="card-subtitle">{item.subtitle}</small>}
                       </td>
                       <td className="wanted-person">{listing.seller.name}</td>
-                      <td>
+                      <td className="wanted-published">
                         <time dateTime={listing.createdAt}>
                           {formatDuration(listing.createdAt)}
                         </time>

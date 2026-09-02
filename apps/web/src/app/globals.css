@@ -681,6 +681,9 @@ main {
   color: var(--muted);
   text-align: center;
 }
+.wanted-table .card-name {
+  white-space: nowrap;
+}
 .wanted-person {
   font-weight: 700;
 }
@@ -1626,6 +1629,12 @@ textarea {
   .market-article {
     min-width: 0;
     overflow-wrap: anywhere;
+  }
+  .wanted-table .market-article {
+    overflow-wrap: normal;
+  }
+  .wanted-table .wanted-published {
+    display: none;
   }
   .market-price {
     min-width: 118px;
