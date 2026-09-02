@@ -66,6 +66,35 @@ async function createPublication(kind: "sale", ownerToken: string) {
   return response.body;
 }
 
+describe("card search", () => {
+  it("matches every search term across card names and subtitles", async () => {
+    for (const card of [
+      ["search-shin-fighter", "Shin Hati's Fiend Fighter", null],
+      ["search-shin-subtitle", "Shin Hati", "Fiendish Apprentice"],
+    ] as const) {
+      await database.execute({
+        sql: "INSERT INTO cards (id, name, subtitle, set_code, card_number) VALUES (?, ?, ?, 'TST', ?)",
+        args: [...card, card[0]],
+      });
+    }
+
+    for (const query of ["shin hati fiend", "shin fiend"]) {
+      const response = await request.get("/listings/cards/search").query({ q: query });
+      expect(response.status).toBe(200);
+      expect(response.body.map((card: { id: string }) => card.id)).toContain(
+        "search-shin-fighter",
+      );
+    }
+
+    const subtitleResponse = await request
+      .get("/listings/cards/search")
+      .query({ q: "shin apprentice" });
+    expect(subtitleResponse.body.map((card: { id: string }) => card.id)).toContain(
+      "search-shin-subtitle",
+    );
+  });
+});
+
 describe("marketplace lifecycle", () => {
   it("requires WhatsApp and a username with at least three letters", async () => {
     for (const profile of [

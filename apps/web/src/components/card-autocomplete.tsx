@@ -11,16 +11,22 @@ interface CardSuggestion {
 }
 
 function HighlightedText({ text, query }: { text: string; query: string }) {
-  const matchIndex = text.toLocaleLowerCase().indexOf(query.trim().toLocaleLowerCase());
-  if (matchIndex === -1 || !query.trim()) return text;
-  const matchEnd = matchIndex + query.trim().length;
-  return (
-    <Fragment>
-      {text.slice(0, matchIndex)}
-      <mark>{text.slice(matchIndex, matchEnd)}</mark>
-      {text.slice(matchEnd)}
-    </Fragment>
-  );
+  const terms = query.trim().split(/\s+/).filter(Boolean);
+  if (!terms.length) return text;
+  const pattern = terms
+    .map((term) => term.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"))
+    .sort((a, b) => b.length - a.length)
+    .join("|");
+  const matches = new RegExp(`(${pattern})`, "gi");
+  return text
+    .split(matches)
+    .map((part, index) =>
+      terms.some((term) => part.toLocaleLowerCase() === term.toLocaleLowerCase()) ? (
+        <mark key={`${part}-${index}`}>{part}</mark>
+      ) : (
+        part
+      ),
+    );
 }
 
 export function CardAutocomplete({
@@ -59,7 +65,7 @@ export function CardAutocomplete({
         );
         if (!response.ok) throw new Error("Card search failed");
         const results = (await response.json()) as CardSuggestion[];
-        setSuggestions(results.slice(0, 3));
+        setSuggestions(results.slice(0, 8));
         setIsOpen(true);
         setActiveIndex(-1);
       } catch (error) {

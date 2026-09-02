@@ -175,6 +175,16 @@ listingsRouter.get("/wanted", async (_req, res) => {
 listingsRouter.get("/cards/search", async (req, res) => {
   const query = String(req.query.q ?? "").trim();
   if (query.length < 1) return res.json([]);
+  const terms = query.split(/\s+/).filter(Boolean).slice(0, 10);
+  const escapeLike = (value: string) => value.replaceAll(/([\\%_])/g, "\\$1");
+  const termFilters = terms
+    .map(() => "(name LIKE ? ESCAPE '\\' OR COALESCE(subtitle, '') LIKE ? ESCAPE '\\')")
+    .join(" AND ");
+  const termArgs = terms.flatMap((term) => {
+    const pattern = `%${escapeLike(term)}%`;
+    return [pattern, pattern];
+  });
+  const escapedQuery = escapeLike(query);
   const result = await db.execute({
     sql: `SELECT id,name,subtitle,set_code,card_number
           FROM (
@@ -184,7 +194,7 @@ listingsRouter.get("/cards/search", async (req, res) => {
                      ORDER BY set_code, card_number
                    ) AS variant_rank
             FROM cards AS card
-            WHERE (name LIKE ? OR subtitle LIKE ?)
+            WHERE ${termFilters}
               AND (
                 subtitle IS NOT NULL
                 OR NOT EXISTS (
@@ -194,9 +204,22 @@ listingsRouter.get("/cards/search", async (req, res) => {
               )
           )
           WHERE variant_rank = 1
-          ORDER BY CASE WHEN name LIKE ? THEN 0 ELSE 1 END, name, subtitle, set_code, card_number
-          LIMIT 3`,
-    args: [`%${query}%`, `%${query}%`, `${query}%`],
+          ORDER BY CASE
+                     WHEN name LIKE ? ESCAPE '\\' THEN 0
+                     WHEN name LIKE ? ESCAPE '\\' THEN 1
+                     WHEN name LIKE ? ESCAPE '\\' THEN 2
+                     WHEN COALESCE(subtitle, '') LIKE ? ESCAPE '\\' THEN 3
+                     ELSE 4
+                   END,
+                   name, subtitle, set_code, card_number
+          LIMIT 8`,
+    args: [
+      ...termArgs,
+      escapedQuery,
+      `${escapedQuery}%`,
+      `%${escapedQuery}%`,
+      `%${escapedQuery}%`,
+    ],
   });
   res.json(result.rows);
 });
