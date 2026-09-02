@@ -1,0 +1,39 @@
+name: Sync production card catalog
+
+on:
+  # The export is inexpensive to reconcile, and a daily check means newly
+  # published sets appear without requiring a deployment.
+  schedule:
+    - cron: "17 7 * * *"
+  workflow_dispatch:
+
+concurrency:
+  # This is also the deployment workflow's concurrency group, so a catalog
+  # write never overlaps a production migration or rollback window.
+  group: production
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment: production
+    env:
+      DEPLOY_HOST: alenta.me
+      DEPLOY_USER: deploy
+      DEPLOY_ROOT: /home/deploy/ackbar-web
+    steps:
+      - name: Install SSH key
+        uses: shimataro/ssh-key-action@v2
+        with:
+          key: ${{ secrets.SSH_KEY }}
+          name: id_rsa
+          known_hosts: ${{ secrets.KNOWN_HOSTS }}
+      - name: Import latest cards
+        run: >-
+          ssh -o ServerAliveInterval=30 -o ServerAliveCountMax=10
+          "$DEPLOY_USER@$DEPLOY_HOST"
+          "DEPLOY_ROOT='$DEPLOY_ROOT' bash '$DEPLOY_ROOT/current/scripts/sync-card-catalog.sh'"

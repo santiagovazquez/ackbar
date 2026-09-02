@@ -72,6 +72,13 @@ The repository's `.nvmrc` selects its own Node.js major without changing the ser
 and its pinned PM2 package runs with isolated state in `/home/deploy/ackbar-web/shared/pm2`. The first
 deployment removes only `ackbar-api` and `ackbar-web` from the server-wide PM2 daemon; other PM2
 applications and the default Node.js version are not changed.
+
+The `Sync production card catalog` GitHub Actions workflow downloads and upserts the current SWU API
+bulk export every day at 07:17 UTC. It can also be run manually with `workflow_dispatch`, including
+once immediately after the first deployment to populate an empty production catalog. It shares the
+deployment concurrency group and uses a server-side lock, so imports cannot overlap deployments or
+one another. A failed import leaves the existing catalog intact and reports a failed workflow run.
+
 Roll back code while preserving current data with:
 
 ```sh
