@@ -181,14 +181,26 @@ app_pm2 delete ackbar-api ackbar-web 2>/dev/null || true
 app_pm2 start "$release/ecosystem.config.cjs" --update-env
 app_pm2 save
 
-# Give the API up to 20 seconds to start, then require both applications to
-# answer locally. A failed check invokes recover().
-for _ in {1..20}; do
-  curl --fail --silent http://127.0.0.1:4001/health >/dev/null && break
-  sleep 1
-done
-curl --fail --silent http://127.0.0.1:4001/health >/dev/null
-curl --fail --silent http://127.0.0.1:4000/ >/dev/null
+# Give each application time to become ready. The API commonly starts before
+# Next.js, so checking the web application only once can roll back a healthy
+# release while it is still booting.
+wait_for_service() {
+  local name="$1"
+  local url="$2"
+
+  for _ in {1..30}; do
+    if curl --fail --silent --max-time 5 "$url" >/dev/null 2>&1; then
+      return 0
+    fi
+    sleep 1
+  done
+
+  echo "$name did not become healthy at $url" >&2
+  curl --fail --silent --show-error --max-time 5 "$url" >/dev/null
+}
+
+wait_for_service "API" "http://127.0.0.1:4001/health"
+wait_for_service "Web application" "http://127.0.0.1:4000/"
 
 # Deployment is complete; later shell errors must not initiate a rollback.
 trap - ERR
