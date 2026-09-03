@@ -2,6 +2,7 @@
 import { useRef, useState } from "react";
 import type { CardInput, Currency, ListingKind, ListingType } from "@swu/shared";
 import { api, createListing } from "../lib/api";
+import { compressImageForUpload, isSupportedImage } from "../lib/compress-image";
 import { useAuth } from "./auth-provider";
 import { CardAutocomplete } from "./card-autocomplete";
 
@@ -82,9 +83,8 @@ export function ListingForm({ kind }: { kind: ListingKind }) {
       setError(`Podés subir hasta ${MAX_IMAGES} imágenes por publicación.`);
       return;
     }
-    const acceptedTypes = new Set(["image/jpeg", "image/png", "image/webp"]);
-    if (selectedFiles.some((file) => !acceptedTypes.has(file.type))) {
-      setError("Las imágenes deben ser JPG, PNG o WebP.");
+    if (selectedFiles.some((file) => !isSupportedImage(file))) {
+      setError("Las imágenes deben ser JPG, PNG, WebP, AVIF, GIF, HEIC o HEIF.");
       return;
     }
     if (selectedFiles.some((file) => file.size > MAX_IMAGE_SIZE)) {
@@ -94,8 +94,11 @@ export function ListingForm({ kind }: { kind: ListingKind }) {
     setUploading(true);
     setError("");
     try {
+      const compressedFiles: File[] = [];
+      for (const file of selectedFiles) compressedFiles.push(await compressImageForUpload(file));
+
       const urls = await Promise.all(
-        selectedFiles.map(async (file) => {
+        compressedFiles.map(async (file) => {
           const upload = await api<{
             url: string;
             fields: Record<string, string>;
@@ -208,21 +211,21 @@ export function ListingForm({ kind }: { kind: ListingKind }) {
             </svg>
             <strong>{dragging ? "Soltá las imágenes acá" : "Arrastrá tus imágenes acá"}</strong>
             <span>o hacé clic para elegir varias</span>
-            <small>JPG, PNG o WebP · máximo 20 MB por imagen</small>
+            <small>Formatos populares, incluido HEIC · se comprimen a menos de 1 MB</small>
           </div>
           <input
             ref={fileInput}
             className="visually-hidden"
             type="file"
             multiple
-            accept="image/jpeg,image/png,image/webp"
+            accept="image/jpeg,image/png,image/webp,image/avif,image/gif,image/heic,image/heif,.heic,.heif"
             onChange={(event) => {
               const files = Array.from(event.target.files ?? []);
               if (files.length) void uploadImages(files);
               event.target.value = "";
             }}
           />
-          {uploading && <p className="upload-status">Subiendo imágenes…</p>}
+          {uploading && <p className="upload-status">Comprimiendo y subiendo imágenes…</p>}
           {imageUrls.length > 0 && (
             <div className="image-previews" aria-label="Imágenes subidas">
               {imageUrls.map((url, index) => (

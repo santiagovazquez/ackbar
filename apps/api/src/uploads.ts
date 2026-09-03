@@ -5,9 +5,9 @@ import { z } from "zod";
 import { requireAuth } from "./auth.js";
 import { config } from "./config.js";
 
-const maximumSizeInBytes = 20 * 1024 * 1024;
+const maximumSizeInBytes = 1024 * 1024 - 1;
 const uploadSchema = z.object({
-  contentType: z.enum(["image/jpeg", "image/png", "image/webp"]),
+  contentType: z.enum(["image/jpeg", "image/png", "image/webp", "image/avif", "image/gif"]),
   size: z.number().int().positive().max(maximumSizeInBytes),
 });
 
@@ -23,7 +23,7 @@ uploadsRouter.post("/", requireAuth, async (request, response) => {
   if (!body.success)
     return response
       .status(400)
-      .json({ error: "Images must be JPG, PNG, or WebP and 20 MB or smaller" });
+      .json({ error: "Images must use a supported format and be smaller than 1 MB" });
 
   const bucket = required(config.s3Bucket, "S3_BUCKET");
   const region = required(config.s3Region, "S3_REGION");

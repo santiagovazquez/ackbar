@@ -193,6 +193,16 @@ describe("marketplace lifecycle", () => {
     ).toBe(401);
   });
 
+  it("rejects images that are not smaller than 1 MB", async () => {
+    const response = await request
+      .post("/uploads")
+      .set(authenticated("seller-token"))
+      .send({ contentType: "image/jpeg", size: 1024 * 1024 });
+
+    expect(response.status).toBe(400);
+    expect(response.body.error).toContain("smaller than 1 MB");
+  });
+
   it("creates a USD other publication with individually priced items", async () => {
     const response = await request
       .post("/listings")

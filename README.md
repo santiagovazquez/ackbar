@@ -55,7 +55,7 @@ configuration and is not stored in this repository.
 
 Build the workspace with `pnpm build`, run the API with `pnpm --filter @swu/api start`, and run the web app with `pnpm --filter @swu/web start`. Set `NEXT_PUBLIC_API_URL` to the public API URL and `WEB_ORIGIN` to the public web URL. When they use different subdomains, set `SESSION_COOKIE_DOMAIN` to their shared parent domain (for example, `.example.com`). A process manager and reverse proxy can keep both services running behind HTTPS on a private server.
 
-Photo uploads use presigned S3 POSTs and go directly from the browser to the bucket. Configure `S3_BUCKET`, `S3_REGION`, `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, and `S3_PUBLIC_URL` in the API environment. The bucket must allow public reads (or be fronted by the public CDN in `S3_PUBLIC_URL`) and its CORS policy must allow `POST` from the web origin. Each publication supports up to 24 images of 20 MB each.
+Photo uploads are compressed in the browser to less than 1 MB and use presigned S3 POSTs to go directly to the bucket. JPG, PNG, WebP, AVIF, GIF, HEIC, and HEIF sources are supported; HEIC/HEIF photos are converted before compression. Configure `S3_BUCKET`, `S3_REGION`, `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, and `S3_PUBLIC_URL` in the API environment. The bucket must allow public reads (or be fronted by the public CDN in `S3_PUBLIC_URL`) and its CORS policy must allow `POST` from the web origin. Each publication supports up to 24 images, with source files of up to 20 MB each.
 
 The API can use a persistent local SQLite file on a private server. Set `DATABASE_URL` to an absolute file URL such as `file:/var/lib/swu/marketplace.db`, or configure a remote libSQL database with `DATABASE_AUTH_TOKEN`.
 
