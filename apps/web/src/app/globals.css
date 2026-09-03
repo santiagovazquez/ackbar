@@ -1754,6 +1754,9 @@ textarea {
   .market-playset-price {
     display: none;
   }
+  .delivery-publication .market-playset-price {
+    display: table-cell;
+  }
   .market-mobile-playset-price {
     display: block;
     margin-top: 3px;
