@@ -7,6 +7,7 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { useAuth } from "../../components/auth-provider";
 import { ShareListingButton } from "../../components/share-listing-button";
 import { api } from "../../lib/api";
+import { whatsappContactHref } from "../../lib/whatsapp";
 
 interface Exchange {
   id: string;
@@ -308,7 +309,10 @@ export default function Dashboard() {
           const contact = group.claims[0]!;
           const whatsapp = contact.counterparty_whatsapp?.replace(/\D/g, "");
           const contactHref = whatsapp
-            ? `https://wa.me/${whatsapp}`
+            ? whatsappContactHref(
+                whatsapp,
+                group.publications.flatMap(({ claims }) => claims),
+              )
             : contact.counterparty_username
               ? `/${contact.counterparty_username}`
               : `/perfil/${group.buyerId}`;
@@ -467,7 +471,7 @@ export default function Dashboard() {
                 {group.claims[0]!.counterparty_whatsapp && (
                   <a
                     className="whatsapp-contact-icon"
-                    href={`https://wa.me/${group.claims[0]!.counterparty_whatsapp.replace(/\D/g, "")}`}
+                    href={whatsappContactHref(group.claims[0]!.counterparty_whatsapp, group.claims)}
                     target="_blank"
                     rel="noreferrer"
                     aria-label={`Contactar a ${group.name} por WhatsApp`}
