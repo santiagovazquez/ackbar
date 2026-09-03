@@ -36,7 +36,7 @@ jobs:
     timeout-minutes: 20
     environment: production
     env:
-      DEPLOY_HOST: alenta.me
+      DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
       DEPLOY_USER: deploy
       DEPLOY_ROOT: /home/deploy/ackbar-web
     steps:

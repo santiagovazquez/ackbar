@@ -49,6 +49,10 @@ allowed CORS origin. Without `.env.local`, development continues to use `localho
 
 ## Production
 
+The production web application is `https://ackb.ar` and its public API is
+`https://api.ackb.ar` (health check: `https://api.ackb.ar/health`). The deployment host is private
+configuration and is not stored in this repository.
+
 Build the workspace with `pnpm build`, run the API with `pnpm --filter @swu/api start`, and run the web app with `pnpm --filter @swu/web start`. Set `NEXT_PUBLIC_API_URL` to the public API URL and `WEB_ORIGIN` to the public web URL. When they use different subdomains, set `SESSION_COOKIE_DOMAIN` to their shared parent domain (for example, `.example.com`). A process manager and reverse proxy can keep both services running behind HTTPS on a private server.
 
 Photo uploads use presigned S3 POSTs and go directly from the browser to the bucket. Configure `S3_BUCKET`, `S3_REGION`, `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, and `S3_PUBLIC_URL` in the API environment. The bucket must allow public reads (or be fronted by the public CDN in `S3_PUBLIC_URL`) and its CORS policy must allow `POST` from the web origin. Each publication supports up to 24 images of 20 MB each.
@@ -60,9 +64,9 @@ To copy one local publication into another database, run `pnpm --filter @swu/api
 ### EC2 deployment
 
 Pushes to `main` are verified and deployed to `/home/deploy/ackbar-web` as immutable releases. The
-workflow expects the GitHub Actions secrets `SSH_KEY` (the private key for `deploy@alenta.me`) and
-`KNOWN_HOSTS` (generate it with `ssh-keyscan -H alenta.me`). Protect the `production` GitHub
-environment if deployments should require approval.
+workflow expects the GitHub Actions secrets `DEPLOY_HOST`, `SSH_KEY` (the private key for the
+deployment user), and `KNOWN_HOSTS` (generated with `ssh-keyscan -H "$DEPLOY_HOST"`). Protect the
+`production` GitHub environment if deployments should require approval.
 
 Before the first deployment, create `/home/deploy/ackbar-web/shared/api.env` and `web.env` on the
 server using [`deploy/env/api.env.example`](deploy/env/api.env.example) and
@@ -86,14 +90,14 @@ one another. A failed import leaves the existing catalog intact and reports a fa
 Roll back code while preserving current data with:
 
 ```sh
-ssh deploy@alenta.me 'bash /home/deploy/ackbar-web/current/scripts/rollback.sh'
+ssh "deploy@$DEPLOY_HOST" 'bash /home/deploy/ackbar-web/current/scripts/rollback.sh'
 ```
 
 To also undo the last migration, restore its pre-deployment snapshot. This discards database writes
 made since that deployment:
 
 ```sh
-ssh deploy@alenta.me 'bash /home/deploy/ackbar-web/current/scripts/rollback.sh --restore-db'
+ssh "deploy@$DEPLOY_HOST" 'bash /home/deploy/ackbar-web/current/scripts/rollback.sh --restore-db'
 ```
 
 Publications expire seven days after creation. Owners can deactivate them, which removes them from
