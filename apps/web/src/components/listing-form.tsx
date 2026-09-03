@@ -211,7 +211,7 @@ export function ListingForm({ kind }: { kind: ListingKind }) {
             </svg>
             <strong>{dragging ? "Soltá las imágenes acá" : "Arrastrá tus imágenes acá"}</strong>
             <span>o hacé clic para elegir varias</span>
-            <small>Formatos populares, incluido HEIC · se comprimen a menos de 1 MB</small>
+            <small>Formatos populares, incluido HEIC · máximo 1500 px y menos de 1 MB</small>
           </div>
           <input
             ref={fileInput}

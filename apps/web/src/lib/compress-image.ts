@@ -2,6 +2,7 @@ import imageCompression from "browser-image-compression";
 import { heicTo, isHeic } from "heic-to/next";
 
 export const MAX_UPLOADED_IMAGE_SIZE = 1024 * 1024 - 1;
+export const MAX_UPLOADED_IMAGE_DIMENSION = 1500;
 
 const HEIC_TYPES = new Set(["image/heic", "image/heif"]);
 const COMPRESSIBLE_TYPES = new Set([
@@ -36,21 +37,29 @@ async function normalizeHeic(file: File) {
 
 export async function compressImageForUpload(source: File): Promise<File> {
   const file = await normalizeHeic(source);
-  if (file.size <= MAX_UPLOADED_IMAGE_SIZE) return file;
-
-  const compressed = await imageCompression(file, {
-    maxSizeMB: 0.95,
-    maxWidthOrHeight: 2400,
+  let compressed = await imageCompression(file, {
+    maxSizeMB: 0.9,
+    maxWidthOrHeight: MAX_UPLOADED_IMAGE_DIMENSION,
     initialQuality: 0.86,
     fileType: "image/webp",
-    maxIteration: 12,
+    maxIteration: 20,
     // Keep the worker code local instead of relying on the library's CDN fallback.
     useWebWorker: false,
   });
 
   if (compressed.size > MAX_UPLOADED_IMAGE_SIZE) {
-    throw new Error(`No se pudo reducir ${source.name} a menos de 1 MB.`);
+    compressed = await imageCompression(compressed, {
+      maxSizeMB: 0.75,
+      maxWidthOrHeight: 1200,
+      initialQuality: 0.75,
+      fileType: "image/webp",
+      maxIteration: 20,
+      useWebWorker: false,
+    });
   }
+
+  if (compressed.size > MAX_UPLOADED_IMAGE_SIZE)
+    throw new Error(`No se pudo reducir ${source.name} a menos de 1 MB.`);
 
   return new File([compressed], withExtension(source.name, "webp"), {
     type: "image/webp",
